@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -31,13 +30,9 @@ header h1 { margin-top: 0; }
 }
 
 .tab {
-    padding: 10px 18px;
-    cursor: pointer;
-    background: #374151;
-    border: none;
-    border-radius: 6px;
-    color: white;
     width: auto;
+    padding: 10px 18px;
+    background: #374151;
 }
 
 .tab.active { background: #2563eb; }
@@ -56,6 +51,29 @@ header h1 { margin-top: 0; }
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
+input, select, textarea, button {
+    font: inherit;
+    padding: 10px;
+    border-radius: 7px;
+}
+
+input, select, textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    margin-top: 6px;
+}
+
+button {
+    width: 100%;
+    margin-top: 7px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover { opacity: .85; }
+
 .grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -63,7 +81,7 @@ header h1 { margin-top: 0; }
 }
 
 .quadrant {
-    min-height: 180px;
+    min-height: 170px;
     padding: 12px;
     border-radius: 10px;
 }
@@ -76,26 +94,45 @@ header h1 { margin-top: 0; }
 .task {
     background: white;
     border-radius: 8px;
-    padding: 12px;
+    padding: 11px;
     margin-top: 9px;
     overflow-wrap: anywhere;
 }
 
 .task-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 10px;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
 }
 
 .task-actions button {
-    width: auto;
-    flex: 1;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    font-size: 17px;
 }
+
+.move-select {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    padding: 6px;
+    font-size: 12px;
+}
+
+.complete-btn { background: #15803d; }
+.delete-btn { background: #dc2626; }
+.hold-btn { background: #f59e0b; color: #422006; }
+.return-btn { background: #2563eb; }
 
 .kpis {
     display: flex;
-    gap: 10px;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
 .kpi {
@@ -108,62 +145,80 @@ header h1 { margin-top: 0; }
 }
 
 .kpi h3 {
-    font-size: 25px;
+    font-size: 24px;
     margin: 5px;
-}
-
-input, button {
-    width: 100%;
-    padding: 11px;
-    margin-top: 7px;
-    font: inherit;
-}
-
-input {
-    border: 1px solid #d1d5db;
-    border-radius: 7px;
-}
-
-button {
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-button:hover { opacity: .88; }
-
-.complete-btn { background: #15803d; }
-.delete-btn { background: #dc2626; }
-.clear-btn { background: #991b1b; }
-
-.secondary-btn { background: #4b5563; }
-
-.history-item {
-    background: #f9fafb;
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 9px;
-    overflow-wrap: anywhere;
-}
-
-.history-date {
-    font-size: 13px;
-    color: #6b7280;
-    margin-top: 6px;
 }
 
 .hidden { display: none; }
 
-.section-title {
-    margin-top: 0;
+.waiting-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1.5fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.waiting-row input { margin: 0; }
+
+.waiting-row button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+}
+
+.bank-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.bank-row input { margin: 0; }
+
+.bank-row button {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+}
+
+.history-item {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.history-date {
+    color: #6b7280;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.small-note {
+    color: #6b7280;
+    font-size: 13px;
 }
 
 @media(max-width: 650px) {
     .grid { grid-template-columns: 1fr; }
+    .waiting-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .waiting-row input:first-child {
+        grid-column: 1 / -1;
+    }
+    .waiting-row textarea {
+        grid-column: 1 / -1;
+    }
+    .bank-row {
+        grid-template-columns: 1fr 90px 36px;
+    }
     .container { padding: 12px; }
-    header { padding: 15px; }
 }
 </style>
 </head>
@@ -182,204 +237,267 @@ button:hover { opacity: .88; }
 
 <div class="container">
 
-    <!-- ACTIVE TASKS -->
+<!-- TASKS -->
 
-    <section id="tasksView">
+<section id="tasksView">
 
-        <div class="card">
-            <h2>Ajouter une tâche</h2>
+    <div class="card">
+        <h2>Ajouter une tâche</h2>
 
-            <input
-                id="taskInput"
-                type="text"
-                maxlength="300"
-                placeholder="Ex: Préparer affichage poste avant vendredi"
-            >
+        <input
+            id="taskInput"
+            type="text"
+            maxlength="300"
+            placeholder="Ex: Préparer affichage poste avant vendredi"
+        >
 
-            <button id="addButton">+ Ajouter une tâche</button>
-        </div>
+        <label for="priorityInput">Choisir la priorité</label>
 
-        <div class="card">
-            <h2>Charge & efficacité</h2>
+        <select id="priorityInput">
+            <option value="1">1 - À faire de suite</option>
+            <option value="2" selected>2 - À planifier</option>
+            <option value="3">3 - Futur moi</option>
+            <option value="4">4 - Poubelle</option>
+        </select>
 
-            <div class="kpis">
-                <div class="kpi">
-                    <h3 id="nbTaches">0</h3>
-                    Tâches actives
-                </div>
+        <button id="addButton">+ Ajouter une tâche</button>
+    </div>
 
-                <div class="kpi">
-                    <h3 id="tempsTotal">0h</h3>
-                    Temps estimé
-                </div>
+    <!-- PROFESSIONAL WORKLOAD -->
 
-                <div class="kpi">
-                    <h3 id="surcharge">🟢</h3>
-                    Surcharge
-                </div>
+    <div id="workloadCard" class="card">
+        <h2>Charge & efficacité</h2>
+
+        <div class="kpis">
+            <div class="kpi">
+                <h3 id="nbTaches">0</h3>
+                Tâches actives
+            </div>
+
+            <div class="kpi">
+                <h3 id="tempsTotal">0h</h3>
+                Temps estimé
+            </div>
+
+            <div class="kpi">
+                <h3 id="surcharge">🟢</h3>
+                Surcharge
             </div>
         </div>
+        <p class="small-note">
+            Les tâches en attente ne sont pas incluses dans la charge active.
+        </p>
+    </div>
 
-        <div class="card">
-            <h2>Mes priorités</h2>
+    <!-- PRIORITIES -->
 
-            <div class="grid">
+    <div class="card">
+        <h2>Mes priorités</h2>
 
-                <div class="quadrant q1">
-                    <h3>1 - À faire de suite</h3>
-                    <div id="q1"></div>
-                </div>
+        <div class="grid">
+            <div class="quadrant q1">
+                <h3>1 - À faire de suite</h3>
+                <div id="q1"></div>
+            </div>
 
-                <div class="quadrant q2">
-                    <h3>2 - À planifier</h3>
-                    <div id="q2"></div>
-                </div>
+            <div class="quadrant q2">
+                <h3>2 - À planifier</h3>
+                <div id="q2"></div>
+            </div>
 
-                <div class="quadrant q3">
-                    <h3>3 - Futur moi</h3>
-                    <div id="q3"></div>
-                </div>
+            <div class="quadrant q3">
+                <h3>3 - Futur moi</h3>
+                <div id="q3"></div>
+            </div>
 
-                <div class="quadrant q4">
-                    <h3>4 - Poubelle</h3>
-                    <div id="q4"></div>
-                </div>
-
+            <div class="quadrant q4">
+                <h3>4 - Poubelle</h3>
+                <div id="q4"></div>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Banque RH</h2>
-            <ul>
-                <li>Refus candidature</li>
-                <li>Convocation entrevue</li>
-                <li>Relance gestionnaire</li>
-                <li>Suivi rencontre</li>
-            </ul>
-        </div>
+    <!-- WAITING LIST -->
 
-    </section>
+    <div class="card">
+        <h2>🟠 En attente</h2>
+        <p class="small-note">
+            Les tâches bloquées ou en attente d'une personne.
+            Tu peux compléter les informations directement ci-dessous.
+        </p>
 
-    <!-- COMPLETED TASKS AND ANALYSIS -->
+        <div id="waitingList"></div>
+    </div>
 
-    <section id="analysisView" class="hidden">
+    <!-- HR BANK: PROFESSIONAL ONLY -->
 
-        <div class="card">
-            <h2>Analyse de mon travail</h2>
+    <div id="bankCard" class="card">
+        <h2>Banque RH</h2>
 
-            <div class="kpis">
-                <div class="kpi">
-                    <h3 id="completedCount">0</h3>
-                    Tâches terminées
-                </div>
+        <p class="small-note">
+            Modifie les activités et leur durée estimée.
+            Tu peux ensuite ajouter ces activités directement à tes tâches.
+        </p>
 
-                <div class="kpi">
-                    <h3 id="completedTime">0h</h3>
-                    Temps estimé accompli
-                </div>
+        <div id="bankList"></div>
 
-                <div class="kpi">
-                    <h3 id="proCount">0</h3>
-                    Tâches professionnelles
-                </div>
+        <h3>Ajouter une activité à la banque</h3>
 
-                <div class="kpi">
-                    <h3 id="persoCount">0</h3>
-                    Tâches personnelles
-                </div>
+        <input id="bankName" placeholder="Nom de l'activité">
+        <input
+            id="bankTime"
+            type="number"
+            min="1"
+            placeholder="Temps estimé en minutes"
+        >
+
+        <button id="addBankButton">+ Ajouter à la banque RH</button>
+    </div>
+
+</section>
+
+<!-- ANALYSIS -->
+
+<section id="analysisView" class="hidden">
+
+    <div class="card">
+        <h2>Analyse de mon travail</h2>
+
+        <div class="kpis">
+            <div class="kpi">
+                <h3 id="completedCount">0</h3>
+                Tâches terminées
+            </div>
+
+            <div class="kpi">
+                <h3 id="completedTime">0h</h3>
+                Temps accompli estimé
+            </div>
+
+            <div class="kpi">
+                <h3 id="proCount">0</h3>
+                Vie Pro
+            </div>
+
+            <div class="kpi">
+                <h3 id="persoCount">0</h3>
+                Vie Perso
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <h2>Historique des tâches terminées</h2>
+    <div class="card">
+        <h2>Historique des tâches terminées</h2>
+        <div id="historyList"></div>
 
-            <p>
-                Toutes tes tâches terminées sont conservées ici,
-                même lorsque tu changes d'onglet.
-            </p>
+        <button id="clearHistory" style="background:#991b1b">
+            Effacer tout l'historique
+        </button>
+    </div>
 
-            <div id="historyList"></div>
-
-            <button id="clearHistory" class="clear-btn">
-                Effacer tout l'historique
-            </button>
-        </div>
-
-    </section>
+</section>
 
 </div>
 
 <script>
 
 // STORAGE
-// Vie Pro and Vie Perso have separate storage.
 
 const STORAGE = {
     pro: "dashboard_taches_pro",
-    perso: "dashboard_taches_perso"
+    perso: "dashboard_taches_perso",
+    history: "dashboard_taches_terminees",
+    waiting: "dashboard_waiting",
+    bank: "dashboard_bank"
 };
 
-let currentView = "pro";
-
-function loadTasks(type) {
+function readStorage(key, fallback) {
     try {
-        const data = localStorage.getItem(STORAGE[type]);
-        const parsed = data ? JSON.parse(data) : [];
-
-        return Array.isArray(parsed) ? parsed : [];
+        const value = JSON.parse(localStorage.getItem(key));
+        return value ?? fallback;
     } catch {
-        return [];
+        return fallback;
     }
 }
 
+function save(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+// IMPORT OLD TASKS
+
+if (
+    localStorage.getItem("taches") &&
+    !localStorage.getItem(STORAGE.pro)
+) {
+    const oldTasks = readStorage("taches", []);
+
+    if (Array.isArray(oldTasks)) {
+        oldTasks.forEach(t => {
+            if (!t.id) t.id = makeId();
+            if (!t.quadrant) t.quadrant = 2;
+        });
+
+        save(STORAGE.pro, oldTasks);
+    }
+}
+
+// MAIN DATA
+
+function makeId() {
+    return Date.now().toString() +
+        Math.random().toString(16).slice(2);
+}
+
 let data = {
-    pro: loadTasks("pro"),
-    perso: loadTasks("perso")
+    pro: readStorage(STORAGE.pro, []),
+    perso: readStorage(STORAGE.perso, [])
 };
 
-function saveTasks(type) {
-    localStorage.setItem(
-        STORAGE[type],
-        JSON.stringify(data[type])
-    );
+let waiting = readStorage(STORAGE.waiting, {
+    pro: [],
+    perso: []
+});
+
+let bank = readStorage(STORAGE.bank, [
+    { id: makeId(), name: "Refus candidature", time: 15 },
+    { id: makeId(), name: "Convocation entrevue", time: 20 },
+    { id: makeId(), name: "Relance gestionnaire", time: 15 },
+    { id: makeId(), name: "Suivi rencontre", time: 30 }
+]);
+
+let currentView = "pro";
+
+// SAVE DATA
+
+function saveTasks() {
+    save(STORAGE.pro, data.pro);
+    save(STORAGE.perso, data.perso);
+    save(STORAGE.waiting, waiting);
+    save(STORAGE.bank, bank);
 }
 
-// TASK ESTIMATION
+// ESTIMATION
 
 function estimationTexte(texte) {
-    texte = texte.toLowerCase();
+    const lower = texte.toLowerCase();
 
-    if (texte.includes("courriel")) return 15;
-    if (texte.includes("affichage")) return 20;
-    if (texte.includes("entrevue")) return 60;
-    if (texte.includes("rencontre")) return 60;
-    if (texte.includes("rapport")) return 120;
+    // Use the HR bank estimate if the task matches an activity.
+    const match = bank.find(
+        item => item.name.toLowerCase() === lower
+    );
+
+    if (currentView === "pro" && match) {
+        return Number(match.time);
+    }
+
+    if (lower.includes("courriel")) return 15;
+    if (lower.includes("affichage")) return 20;
+    if (lower.includes("entrevue")) return 60;
+    if (lower.includes("rencontre")) return 60;
+    if (lower.includes("rapport")) return 120;
 
     return 30;
-}
-
-// PRIORITY CLASSIFICATION
-
-function classifier(texte) {
-    texte = texte.toLowerCase();
-
-    if (
-        texte.includes("urgent") ||
-        texte.includes("aujourd")
-    ) return 1;
-
-    if (
-        texte.includes("idée") ||
-        texte.includes("plus tard") ||
-        texte.includes("améliorer")
-    ) return 3;
-
-    if (
-        texte.includes("annuler") ||
-        texte.includes("supprimer")
-    ) return 4;
-
-    return 2;
 }
 
 // ADD TASK
@@ -393,164 +511,211 @@ function ajouterTache() {
         return;
     }
 
-    const tache = {
-        id: Date.now().toString() + Math.random().toString(16).slice(2),
-        texte: texte,
+    const priority = Number(
+        document.getElementById("priorityInput").value
+    );
+
+    data[currentView].push({
+        id: makeId(),
+        texte,
         temps: estimationTexte(texte),
-        quadrant: classifier(texte),
+        quadrant: priority,
         creeLe: new Date().toISOString()
+    });
+
+    saveTasks();
+    input.value = "";
+    afficher();
+    input.focus();
+}
+
+// MOVE TASK
+
+function deplacerTache(id, priority) {
+    const task = data[currentView].find(t => t.id === id);
+    if (!task) return;
+
+    task.quadrant = Number(priority);
+
+    saveTasks();
+    afficher();
+}
+
+// PUT TASK ON HOLD
+
+function mettreEnAttente(id) {
+    const task = data[currentView].find(t => t.id === id);
+    if (!task) return;
+
+    waiting[currentView].push({
+        ...task,
+        who: "",
+        notes: "",
+        miseEnAttenteLe: new Date().toISOString()
+    });
+
+    data[currentView] = data[currentView].filter(
+        t => t.id !== id
+    );
+
+    saveTasks();
+    afficher();
+}
+
+// EDIT WAITING INFORMATION
+
+function modifierAttente(id, field, value) {
+    const task = waiting[currentView].find(t => t.id === id);
+    if (!task) return;
+
+    task[field] = value;
+    saveTasks();
+}
+
+// RETURN TASK FROM WAITING
+
+function reprendreTache(id) {
+    const task = waiting[currentView].find(t => t.id === id);
+    if (!task) return;
+
+    const restored = {
+        ...task,
+        quadrant: Number(task.quadrant) || 2
     };
 
-    data[currentView].push(tache);
+    delete restored.who;
+    delete restored.notes;
+    delete restored.miseEnAttenteLe;
 
-    saveTasks(currentView);
+    data[currentView].push(restored);
+
+    waiting[currentView] = waiting[currentView].filter(
+        t => t.id !== id
+    );
+
+    saveTasks();
     afficher();
-
-    input.value = "";
-    input.focus();
 }
 
 // COMPLETE TASK
 
 function terminerTache(id) {
     const task = data[currentView].find(t => t.id === id);
-
     if (!task) return;
 
-    task.termineLe = new Date().toISOString();
-
-    data[currentView] = data[currentView].filter(
-        t => t.id !== id
-    );
-
-    // Completed tasks are stored in their own history.
-    const historyKey = "dashboard_taches_terminees";
-
-    let history = [];
-
-    try {
-        history = JSON.parse(
-            localStorage.getItem(historyKey)
-        ) || [];
-    } catch {
-        history = [];
-    }
+    const history = readStorage(STORAGE.history, []);
 
     history.push({
         ...task,
-        categorie: currentView
+        categorie: currentView,
+        termineLe: new Date().toISOString()
     });
 
-    localStorage.setItem(
-        historyKey,
-        JSON.stringify(history)
-    );
-
-    saveTasks(currentView);
-
-    afficher();
-}
-
-// DELETE TASK
-
-function supprimerTache(id) {
-    const confirmation = confirm(
-        "Veux-tu vraiment supprimer cette tâche définitivement ?"
-    );
-
-    if (!confirmation) return;
+    save(STORAGE.history, history);
 
     data[currentView] = data[currentView].filter(
         t => t.id !== id
     );
 
-    saveTasks(currentView);
+    saveTasks();
     afficher();
 }
 
-// HISTORY
+// DELETE ACTIVE TASK
 
-function getHistory() {
-    try {
-        const history = JSON.parse(
-            localStorage.getItem("dashboard_taches_terminees")
-        );
+function supprimerTache(id) {
+    if (!confirm("Supprimer définitivement cette tâche ?")) return;
 
-        return Array.isArray(history) ? history : [];
-    } catch {
-        return [];
-    }
-}
-
-function viderHistorique() {
-    const confirmation = confirm(
-        "Attention : veux-tu vraiment effacer TOUTES les tâches terminées ? Cette action est définitive."
+    data[currentView] = data[currentView].filter(
+        t => t.id !== id
     );
 
-    if (!confirmation) return;
-
-    localStorage.removeItem("dashboard_taches_terminees");
-
-    afficherAnalyse();
+    saveTasks();
+    afficher();
 }
 
-// SAFE ELEMENT CREATION
+// CREATE ELEMENT SAFELY
 
-function creerElement(tag, className, texte) {
-    const element = document.createElement(tag);
-
-    if (className) element.className = className;
-    if (texte !== undefined) element.textContent = texte;
-
-    return element;
+function element(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
 }
 
-// DISPLAY ACTIVE TASKS
+function iconButton(icon, className, title, callback) {
+    const button = element("button", className, icon);
+    button.title = title;
+    button.setAttribute("aria-label", title);
+    button.addEventListener("click", callback);
+    return button;
+}
+
+// DISPLAY TASKS
 
 function afficher() {
     ["q1", "q2", "q3", "q4"].forEach(id => {
         document.getElementById(id).replaceChildren();
     });
 
-    const taches = data[currentView];
-
+    const tasks = data[currentView];
     let minutes = 0;
 
-    taches.forEach(t => {
+    tasks.forEach(t => {
         minutes += Number(t.temps) || 0;
 
-        const item = creerElement("div", "task");
+        const item = element("div", "task");
+        const title = element("strong", "", t.texte);
+        const time = element("div", "", (t.temps || 0) + " min");
 
-        const title = creerElement("strong", "", t.texte);
-        const time = creerElement(
-            "div",
-            "",
-            (t.temps || 0) + " min"
+        const actions = element("div", "task-actions");
+
+        const move = element("select", "move-select");
+
+        [1, 2, 3, 4].forEach(n => {
+            const option = element(
+                "option",
+                "",
+                n + " - " + [
+                    "Urgent",
+                    "À planifier",
+                    "Futur moi",
+                    "Poubelle"
+                ][n - 1]
+            );
+
+            option.value = n;
+            option.selected = Number(t.quadrant) === n;
+            move.append(option);
+        });
+
+        move.title = "Changer la priorité";
+        move.addEventListener("change", () => {
+            deplacerTache(t.id, move.value);
+        });
+
+        const hold = iconButton(
+            "⏸",
+            "hold-btn",
+            "Mettre en attente",
+            () => mettreEnAttente(t.id)
         );
 
-        const actions = creerElement("div", "task-actions");
-
-        const doneButton = creerElement(
-            "button",
+        const done = iconButton(
+            "✓",
             "complete-btn",
-            "✓ Terminé"
+            "Terminer",
+            () => terminerTache(t.id)
         );
 
-        doneButton.addEventListener("click", () => {
-            terminerTache(t.id);
-        });
-
-        const deleteButton = creerElement(
-            "button",
+        const del = iconButton(
+            "🗑",
             "delete-btn",
-            "🗑 Supprimer"
+            "Supprimer",
+            () => supprimerTache(t.id)
         );
 
-        deleteButton.addEventListener("click", () => {
-            supprimerTache(t.id);
-        });
-
-        actions.append(doneButton, deleteButton);
+        actions.append(move, hold, done, del);
         item.append(title, time, actions);
 
         const quadrant = Math.min(
@@ -561,27 +726,157 @@ function afficher() {
         document.getElementById("q" + quadrant).append(item);
     });
 
-    document.getElementById("nbTaches").textContent =
-        taches.length;
+    // Workload only applies to Vie Pro.
+    if (currentView === "pro") {
+        document.getElementById("nbTaches").textContent =
+            tasks.length;
 
-    document.getElementById("tempsTotal").textContent =
-        (minutes / 60).toFixed(1) + "h";
+        document.getElementById("tempsTotal").textContent =
+            (minutes / 60).toFixed(1) + "h";
 
-    let indicateur = "🟢";
+        let indicator = "🟢";
 
-    if (minutes > 360) indicateur = "🟡";
-    if (minutes > 450) indicateur = "🔴";
+        if (minutes > 360) indicator = "🟡";
+        if (minutes > 450) indicator = "🔴";
 
-    document.getElementById("surcharge").textContent =
-        indicateur;
+        document.getElementById("surcharge").textContent =
+            indicator;
+    }
+
+    afficherAttente();
+    afficherBanque();
 }
 
-// DISPLAY COMPLETED TASKS AND ANALYSIS
+// WAITING LIST
+
+function afficherAttente() {
+    const list = document.getElementById("waitingList");
+    list.replaceChildren();
+
+    const tasks = waiting[currentView];
+
+    if (!tasks.length) {
+        list.append(
+            element("p", "small-note", "Aucune tâche en attente.")
+        );
+        return;
+    }
+
+    tasks.forEach(t => {
+        const row = element("div", "waiting-row");
+
+        const name = element("div", "", t.texte);
+        const who = element("input");
+        who.placeholder = "Qui ?";
+        who.value = t.who || "";
+        who.addEventListener("change", () => {
+            modifierAttente(t.id, "who", who.value);
+        });
+
+        const notes = element("textarea");
+        notes.placeholder = "Notes...";
+        notes.value = t.notes || "";
+        notes.rows = 2;
+        notes.addEventListener("change", () => {
+            modifierAttente(t.id, "notes", notes.value);
+        });
+
+        const restore = iconButton(
+            "↩",
+            "return-btn",
+            "Reprendre la tâche",
+            () => reprendreTache(t.id)
+        );
+
+        row.append(name, who, notes, restore);
+        list.append(row);
+    });
+}
+
+// HR BANK
+
+function afficherBanque() {
+    const list = document.getElementById("bankList");
+    list.replaceChildren();
+
+    bank.forEach(t => {
+        const row = element("div", "bank-row");
+
+        const name = element("input");
+        name.value = t.name;
+        name.placeholder = "Nom de l'activité";
+
+        name.addEventListener("change", () => {
+            t.name = name.value.trim();
+            saveTasks();
+        });
+
+        const time = element("input");
+        time.type = "number";
+        time.min = "1";
+        time.value = t.time;
+
+        time.addEventListener("change", () => {
+            const value = Number(time.value);
+
+            if (value > 0) {
+                t.time = value;
+                saveTasks();
+            } else {
+                time.value = t.time;
+            }
+        });
+
+        const del = iconButton(
+            "🗑",
+            "delete-btn",
+            "Supprimer cette activité",
+            () => {
+                if (!confirm("Supprimer cette activité de la banque ?")) return;
+
+                bank = bank.filter(b => b.id !== t.id);
+                saveTasks();
+                afficherBanque();
+            }
+        );
+
+        row.append(name, time, del);
+        list.append(row);
+    });
+}
+
+function ajouterBanque() {
+    const name = document.getElementById("bankName");
+    const time = document.getElementById("bankTime");
+
+    const activity = name.value.trim();
+    const minutes = Number(time.value);
+
+    if (!activity || !minutes || minutes < 1) {
+        alert("Entre un nom et un temps supérieur à zéro.");
+        return;
+    }
+
+    bank.push({
+        id: makeId(),
+        name: activity,
+        time: minutes
+    });
+
+    saveTasks();
+
+    name.value = "";
+    time.value = "";
+
+    afficherBanque();
+}
+
+// ANALYSIS
 
 function afficherAnalyse() {
-    const history = getHistory();
+    const history = readStorage(STORAGE.history, []);
 
-    const totalMinutes = history.reduce(
+    const minutes = history.reduce(
         (sum, t) => sum + (Number(t.temps) || 0),
         0
     );
@@ -590,7 +885,7 @@ function afficherAnalyse() {
         history.length;
 
     document.getElementById("completedTime").textContent =
-        (totalMinutes / 60).toFixed(1) + "h";
+        (minutes / 60).toFixed(1) + "h";
 
     document.getElementById("proCount").textContent =
         history.filter(t => t.categorie === "pro").length;
@@ -601,50 +896,44 @@ function afficherAnalyse() {
     const list = document.getElementById("historyList");
     list.replaceChildren();
 
-    if (history.length === 0) {
-        list.append(
-            creerElement(
-                "p",
-                "",
-                "Aucune tâche terminée pour le moment."
-            )
-        );
-        return;
-    }
-
     const sorted = [...history].sort(
-        (a, b) =>
-            new Date(b.termineLe) - new Date(a.termineLe)
+        (a, b) => new Date(b.termineLe) - new Date(a.termineLe)
     );
 
+    if (!sorted.length) {
+        list.append(element("p", "", "Aucune tâche terminée."));
+    }
+
     sorted.forEach(t => {
-        const item = creerElement("div", "history-item");
+        const item = element("div", "history-item");
 
-        const title = creerElement("strong", "", "✓ " + t.texte);
-
-        const category = t.categorie === "pro"
-            ? "Vie Pro"
-            : "Vie Perso";
-
-        const details = creerElement(
-            "div",
-            "",
-            category + " • " + (t.temps || 0) + " min"
+        item.append(
+            element("strong", "", "✓ " + t.texte),
+            element(
+                "div",
+                "",
+                (t.categorie === "pro" ? "Vie Pro" : "Vie Perso") +
+                " • " + (t.temps || 0) + " min"
+            ),
+            element(
+                "div",
+                "history-date",
+                "Terminée le : " +
+                (t.termineLe
+                    ? new Date(t.termineLe).toLocaleString("fr-CA")
+                    : "Date inconnue")
+            )
         );
 
-        const date = t.termineLe
-            ? new Date(t.termineLe).toLocaleString("fr-CA")
-            : "Date inconnue";
-
-        const dateElement = creerElement(
-            "div",
-            "history-date",
-            "Terminée le : " + date
-        );
-
-        item.append(title, details, dateElement);
         list.append(item);
     });
+}
+
+function viderHistorique() {
+    if (!confirm("Effacer définitivement tout l'historique ?")) return;
+
+    localStorage.removeItem(STORAGE.history);
+    afficherAnalyse();
 }
 
 // NAVIGATION
@@ -659,22 +948,29 @@ function changerVue(view) {
         );
     });
 
-    const isAnalysis = view === "analyse";
+    const analysis = view === "analyse";
 
     document.getElementById("tasksView")
-        .classList.toggle("hidden", isAnalysis);
+        .classList.toggle("hidden", analysis);
 
     document.getElementById("analysisView")
-        .classList.toggle("hidden", !isAnalysis);
+        .classList.toggle("hidden", !analysis);
 
-    if (isAnalysis) {
+    // Hide workload and HR bank in Vie Perso.
+    document.getElementById("workloadCard")
+        .classList.toggle("hidden", view !== "pro");
+
+    document.getElementById("bankCard")
+        .classList.toggle("hidden", view !== "pro");
+
+    if (analysis) {
         afficherAnalyse();
     } else {
         afficher();
     }
 }
 
-// BUTTON EVENTS
+// EVENTS
 
 document.getElementById("addButton").addEventListener(
     "click",
@@ -688,23 +984,26 @@ document.getElementById("taskInput").addEventListener(
     }
 );
 
-document.querySelectorAll(".tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-        changerVue(tab.dataset.view);
-    });
-});
+document.getElementById("addBankButton").addEventListener(
+    "click",
+    ajouterBanque
+);
 
 document.getElementById("clearHistory").addEventListener(
     "click",
     viderHistorique
 );
 
-// START
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        changerVue(tab.dataset.view);
+    });
+});
 
-afficher();
+// INITIALIZE
+
+changerVue("pro");
 
 </script>
-
 </body>
 </html>
-```
