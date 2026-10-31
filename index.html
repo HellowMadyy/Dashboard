@@ -51,13 +51,13 @@ header h1 { margin-top: 0; }
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
-input, select, textarea, button {
+input, button {
     font: inherit;
     padding: 10px;
     border-radius: 7px;
 }
 
-input, select, textarea {
+input {
     width: 100%;
     border: 1px solid #d1d5db;
     margin-top: 6px;
@@ -81,9 +81,16 @@ button:hover { opacity: .85; }
 }
 
 .quadrant {
-    min-height: 170px;
+    min-height: 180px;
     padding: 12px;
     border-radius: 10px;
+    transition: background .15s;
+}
+
+.quadrant.drag-over {
+    outline: 3px dashed #2563eb;
+    outline-offset: -4px;
+    background: #bfdbfe;
 }
 
 .q1 { background: #fee2e2; }
@@ -97,36 +104,35 @@ button:hover { opacity: .85; }
     padding: 11px;
     margin-top: 9px;
     overflow-wrap: anywhere;
+    cursor: grab;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
 }
+
+.task:active { cursor: grabbing; }
+.task.dragging { opacity: .4; }
 
 .task-actions {
     display: flex;
     align-items: center;
     gap: 5px;
-    margin-top: 8px;
+    margin-top: 9px;
 }
 
-.task-actions button {
+.task-actions button,
+.bank-row button,
+.waiting-row button {
     width: 34px;
     height: 34px;
     padding: 0;
     margin: 0;
     flex-shrink: 0;
-    font-size: 17px;
-}
-
-.move-select {
-    flex: 1;
-    width: auto;
-    min-width: 0;
-    margin: 0;
-    padding: 6px;
-    font-size: 12px;
+    font-size: 16px;
 }
 
 .complete-btn { background: #15803d; }
 .delete-btn { background: #dc2626; }
 .hold-btn { background: #f59e0b; color: #422006; }
+.edit-btn { background: #64748b; }
 .return-btn { background: #2563eb; }
 
 .kpis {
@@ -145,7 +151,7 @@ button:hover { opacity: .85; }
 }
 
 .kpi h3 {
-    font-size: 24px;
+    font-size: 23px;
     margin: 5px;
 }
 
@@ -153,38 +159,37 @@ button:hover { opacity: .85; }
 
 .waiting-row {
     display: grid;
-    grid-template-columns: 1.1fr 1fr 1.5fr auto;
+    grid-template-columns: 1.2fr 1fr 1.5fr auto auto;
     gap: 8px;
     align-items: center;
     padding: 10px 0;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.waiting-row input { margin: 0; }
+.waiting-row button { margin: 0; }
 
-.waiting-row button {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    margin: 0;
+.waiting-info {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.waiting-notes {
+    font-size: 13px;
+    color: #6b7280;
 }
 
 .bank-row {
     display: grid;
-    grid-template-columns: 2fr 1fr auto;
+    grid-template-columns: 1fr auto auto auto;
     gap: 8px;
     align-items: center;
     margin-bottom: 8px;
+    padding: 9px;
+    background: #f9fafb;
+    border-radius: 8px;
 }
 
-.bank-row input { margin: 0; }
-
-.bank-row button {
-    width: 36px;
-    height: 36px;
-    margin: 0;
-    padding: 0;
-}
+.bank-row button { margin: 0; }
 
 .history-item {
     background: #f9fafb;
@@ -207,17 +212,9 @@ button:hover { opacity: .85; }
 @media(max-width: 650px) {
     .grid { grid-template-columns: 1fr; }
     .waiting-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr auto auto;
     }
-    .waiting-row input:first-child {
-        grid-column: 1 / -1;
-    }
-    .waiting-row textarea {
-        grid-column: 1 / -1;
-    }
-    .bank-row {
-        grid-template-columns: 1fr 90px 36px;
-    }
+    .waiting-info { grid-column: 1 / -1; }
     .container { padding: 12px; }
 }
 </style>
@@ -237,9 +234,9 @@ button:hover { opacity: .85; }
 
 <div class="container">
 
-<!-- TASKS -->
-
 <section id="tasksView">
+
+    <!-- ADD TASK -->
 
     <div class="card">
         <h2>Ajouter une tâche</h2>
@@ -248,22 +245,18 @@ button:hover { opacity: .85; }
             id="taskInput"
             type="text"
             maxlength="300"
-            placeholder="Ex: Préparer affichage poste avant vendredi"
+            placeholder="Ex: 1 poste / 2 entrevue Priscilla"
         >
 
-        <label for="priorityInput">Choisir la priorité</label>
-
-        <select id="priorityInput">
-            <option value="1">1 - À faire de suite</option>
-            <option value="2" selected>2 - À planifier</option>
-            <option value="3">3 - Futur moi</option>
-            <option value="4">4 - Poubelle</option>
-        </select>
-
         <button id="addButton">+ Ajouter une tâche</button>
+
+        <p class="small-note">
+            Commence par 1, 2, 3 ou 4 pour choisir ta priorité.
+            Sans numéro, la tâche ira dans la priorité 2.
+        </p>
     </div>
 
-    <!-- PROFESSIONAL WORKLOAD -->
+    <!-- WORKLOAD: PRO ONLY -->
 
     <div id="workloadCard" class="card">
         <h2>Charge & efficacité</h2>
@@ -275,7 +268,7 @@ button:hover { opacity: .85; }
             </div>
 
             <div class="kpi">
-                <h3 id="tempsTotal">0h</h3>
+                <h3 id="tempsTotal">0 min</h3>
                 Temps estimé
             </div>
 
@@ -284,6 +277,7 @@ button:hover { opacity: .85; }
                 Surcharge
             </div>
         </div>
+
         <p class="small-note">
             Les tâches en attente ne sont pas incluses dans la charge active.
         </p>
@@ -294,61 +288,67 @@ button:hover { opacity: .85; }
     <div class="card">
         <h2>Mes priorités</h2>
 
+        <p class="small-note">
+            Glisse une tâche vers un autre rectangle pour changer sa priorité.
+        </p>
+
         <div class="grid">
-            <div class="quadrant q1">
+
+            <div class="quadrant q1" data-priority="1">
                 <h3>1 - À faire de suite</h3>
                 <div id="q1"></div>
             </div>
 
-            <div class="quadrant q2">
+            <div class="quadrant q2" data-priority="2">
                 <h3>2 - À planifier</h3>
                 <div id="q2"></div>
             </div>
 
-            <div class="quadrant q3">
+            <div class="quadrant q3" data-priority="3">
                 <h3>3 - Futur moi</h3>
                 <div id="q3"></div>
             </div>
 
-            <div class="quadrant q4">
+            <div class="quadrant q4" data-priority="4">
                 <h3>4 - Poubelle</h3>
                 <div id="q4"></div>
             </div>
+
         </div>
     </div>
 
-    <!-- WAITING LIST -->
+    <!-- WAITING: PRO ONLY -->
 
-    <div class="card">
+    <div id="waitingCard" class="card">
         <h2>🟠 En attente</h2>
+
         <p class="small-note">
             Les tâches bloquées ou en attente d'une personne.
-            Tu peux compléter les informations directement ci-dessous.
         </p>
 
         <div id="waitingList"></div>
     </div>
 
-    <!-- HR BANK: PROFESSIONAL ONLY -->
+    <!-- HR BANK: PRO ONLY -->
 
     <div id="bankCard" class="card">
         <h2>Banque RH</h2>
 
         <p class="small-note">
-            Modifie les activités et leur durée estimée.
-            Tu peux ensuite ajouter ces activités directement à tes tâches.
+            Chaque mot-clé permet de reconnaître une activité
+            et d'appliquer automatiquement son temps estimé.
         </p>
 
         <div id="bankList"></div>
 
-        <h3>Ajouter une activité à la banque</h3>
+        <h3>Ajouter un mot-clé</h3>
 
-        <input id="bankName" placeholder="Nom de l'activité">
+        <input id="bankName" placeholder="Ex: entrevue">
         <input
             id="bankTime"
             type="number"
             min="1"
-            placeholder="Temps estimé en minutes"
+            placeholder="Temps en minutes"
         >
 
         <button id="addBankButton">+ Ajouter à la banque RH</button>
@@ -370,7 +370,7 @@ button:hover { opacity: .85; }
             </div>
 
             <div class="kpi">
-                <h3 id="completedTime">0h</h3>
+                <h3 id="completedTime">0 min</h3>
                 Temps accompli estimé
             </div>
 
@@ -424,6 +424,11 @@ function save(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
 }
 
+function makeId() {
+    return Date.now().toString() +
+        Math.random().toString(16).slice(2);
+}
+
 // IMPORT OLD TASKS
 
 if (
@@ -444,11 +449,6 @@ if (
 
 // MAIN DATA
 
-function makeId() {
-    return Date.now().toString() +
-        Math.random().toString(16).slice(2);
-}
-
 let data = {
     pro: readStorage(STORAGE.pro, []),
     perso: readStorage(STORAGE.perso, [])
@@ -459,6 +459,13 @@ let waiting = readStorage(STORAGE.waiting, {
     perso: []
 });
 
+if (Array.isArray(waiting)) {
+    waiting = { pro: waiting, perso: [] };
+}
+
+if (!Array.isArray(waiting.pro)) waiting.pro = [];
+if (!Array.isArray(waiting.perso)) waiting.perso = [];
+
 let bank = readStorage(STORAGE.bank, [
     { id: makeId(), name: "Refus candidature", time: 15 },
     { id: makeId(), name: "Convocation entrevue", time: 20 },
@@ -466,9 +473,11 @@ let bank = readStorage(STORAGE.bank, [
     { id: makeId(), name: "Suivi rencontre", time: 30 }
 ]);
 
+if (!Array.isArray(bank)) bank = [];
+
 let currentView = "pro";
 
-// SAVE DATA
+// SAVE
 
 function saveTasks() {
     save(STORAGE.pro, data.pro);
@@ -477,20 +486,65 @@ function saveTasks() {
     save(STORAGE.bank, bank);
 }
 
-// ESTIMATION
+// FORMAT TIME
 
-function estimationTexte(texte) {
-    const lower = texte.toLowerCase();
+function formatTime(minutes) {
+    minutes = Math.max(0, Math.round(Number(minutes) || 0));
 
-    // Use the HR bank estimate if the task matches an activity.
-    const match = bank.find(
-        item => item.name.toLowerCase() === lower
-    );
+    const hours = Math.floor(minutes / 60);
+    const remaining = minutes % 60;
 
-    if (currentView === "pro" && match) {
-        return Number(match.time);
+    if (hours === 0) return minutes + " min";
+    if (remaining === 0) return hours + " h";
+
+    return hours + " h " + remaining + " min";
+}
+
+// TASK PRIORITY FROM TEXT
+
+function parsePriority(text) {
+    const match = text.match(/^([1-4])\s+(.+)$/);
+
+    if (match) {
+        return {
+            priority: Number(match[1]),
+            text: match[2].trim()
+        };
     }
 
+    return {
+        priority: 2,
+        text: text.trim()
+    };
+}
+
+// ESTIMATION USING HR KEYWORDS
+
+function estimationTexte(texte) {
+    const lower = texte.toLocaleLowerCase("fr");
+
+    // Explicit time in task text takes priority.
+    const explicit = lower.match(
+        /(?:^|\s)(\d+)\s*(?:min|minutes?)\b/
+    );
+
+    if (explicit) {
+        return Number(explicit[1]);
+    }
+
+    // Match the longest HR keyword contained in the task.
+    const matches = bank
+        .filter(item =>
+            item.name &&
+            lower.includes(item.name.trim().toLocaleLowerCase("fr"))
+        )
+        .sort((a, b) => b.name.length - a.name.length);
+
+    if (matches.length) {
+        return Number(matches[0].time) || 30;
+    }
+
+    // Default estimates.
     if (lower.includes("courriel")) return 15;
     if (lower.includes("affichage")) return 20;
     if (lower.includes("entrevue")) return 60;
@@ -504,24 +558,29 @@ function estimationTexte(texte) {
 
 function ajouterTache() {
     const input = document.getElementById("taskInput");
-    const texte = input.value.trim();
+    const value = input.value.trim();
 
-    if (!texte) {
+    if (!value) {
         alert("Écris une tâche avant de l'ajouter.");
         return;
     }
 
-    const priority = Number(
-        document.getElementById("priorityInput").value
-    );
+    const parsed = parsePriority(value);
 
-    data[currentView].push({
+    if (!parsed.text) {
+        alert("Ajoute un nom de tâche après le numéro.");
+        return;
+    }
+
+    const task = {
         id: makeId(),
-        texte,
-        temps: estimationTexte(texte),
-        quadrant: priority,
+        texte: parsed.text,
+        temps: estimationTexte(parsed.text),
+        quadrant: parsed.priority,
         creeLe: new Date().toISOString()
-    });
+    };
+
+    data[currentView].push(task);
 
     saveTasks();
     input.value = "";
@@ -541,41 +600,139 @@ function deplacerTache(id, priority) {
     afficher();
 }
 
-// PUT TASK ON HOLD
+// EDIT TASK NAME
 
-function mettreEnAttente(id) {
+function modifierTache(id) {
     const task = data[currentView].find(t => t.id === id);
     if (!task) return;
 
-    waiting[currentView].push({
+    const answer = prompt(
+        "Modifier le nom de la tâche :",
+        task.texte
+    );
+
+    if (answer === null) return;
+
+    const value = answer.trim();
+
+    if (!value) {
+        alert("Le nom ne peut pas être vide.");
+        return;
+    }
+
+    const parsed = parsePriority(value);
+
+    task.texte = parsed.text;
+
+    // If a priority number is entered, update the quadrant too.
+    if (/^[1-4]\s+/.test(value)) {
+        task.quadrant = parsed.priority;
+    }
+
+    task.temps = estimationTexte(task.texte);
+
+    saveTasks();
+    afficher();
+}
+
+// DRAG AND DROP
+
+let draggedTaskId = null;
+
+function configurerDragAndDrop() {
+    document.querySelectorAll(".quadrant").forEach(zone => {
+
+        zone.addEventListener("dragover", event => {
+            event.preventDefault();
+            zone.classList.add("drag-over");
+        });
+
+        zone.addEventListener("dragleave", () => {
+            zone.classList.remove("drag-over");
+        });
+
+        zone.addEventListener("drop", event => {
+            event.preventDefault();
+
+            zone.classList.remove("drag-over");
+
+            if (!draggedTaskId) return;
+
+            deplacerTache(
+                draggedTaskId,
+                zone.dataset.priority
+            );
+
+            draggedTaskId = null;
+        });
+    });
+}
+
+// PUT TASK ON HOLD
+
+function mettreEnAttente(id) {
+    const task = data.pro.find(t => t.id === id);
+    if (!task) return;
+
+    waiting.pro.push({
         ...task,
         who: "",
         notes: "",
         miseEnAttenteLe: new Date().toISOString()
     });
 
-    data[currentView] = data[currentView].filter(
-        t => t.id !== id
-    );
+    data.pro = data.pro.filter(t => t.id !== id);
 
     saveTasks();
     afficher();
 }
 
-// EDIT WAITING INFORMATION
+// EDIT WAITING TASK
 
-function modifierAttente(id, field, value) {
-    const task = waiting[currentView].find(t => t.id === id);
+function modifierAttente(id) {
+    const task = waiting.pro.find(t => t.id === id);
     if (!task) return;
 
-    task[field] = value;
+    const newName = prompt(
+        "Nom de la tâche :",
+        task.texte
+    );
+
+    if (newName === null) return;
+
+    const cleanName = newName.trim();
+
+    if (!cleanName) {
+        alert("Le nom ne peut pas être vide.");
+        return;
+    }
+
+    const who = prompt(
+        "Qui ?",
+        task.who || ""
+    );
+
+    if (who === null) return;
+
+    const notes = prompt(
+        "Notes :",
+        task.notes || ""
+    );
+
+    if (notes === null) return;
+
+    task.texte = cleanName;
+    task.who = who;
+    task.notes = notes;
+
     saveTasks();
+    afficher();
 }
 
 // RETURN TASK FROM WAITING
 
 function reprendreTache(id) {
-    const task = waiting[currentView].find(t => t.id === id);
+    const task = waiting.pro.find(t => t.id === id);
     if (!task) return;
 
     const restored = {
@@ -587,11 +744,9 @@ function reprendreTache(id) {
     delete restored.notes;
     delete restored.miseEnAttenteLe;
 
-    data[currentView].push(restored);
+    data.pro.push(restored);
 
-    waiting[currentView] = waiting[currentView].filter(
-        t => t.id !== id
-    );
+    waiting.pro = waiting.pro.filter(t => t.id !== id);
 
     saveTasks();
     afficher();
@@ -621,7 +776,7 @@ function terminerTache(id) {
     afficher();
 }
 
-// DELETE ACTIVE TASK
+// DELETE TASK
 
 function supprimerTache(id) {
     if (!confirm("Supprimer définitivement cette tâche ?")) return;
@@ -634,20 +789,25 @@ function supprimerTache(id) {
     afficher();
 }
 
-// CREATE ELEMENT SAFELY
+// SAFE ELEMENT CREATION
 
 function element(tag, className, text) {
     const el = document.createElement(tag);
+
     if (className) el.className = className;
     if (text !== undefined) el.textContent = text;
+
     return el;
 }
 
 function iconButton(icon, className, title, callback) {
     const button = element("button", className, icon);
+
     button.title = title;
     button.setAttribute("aria-label", title);
+
     button.addEventListener("click", callback);
+
     return button;
 }
 
@@ -659,48 +819,64 @@ function afficher() {
     });
 
     const tasks = data[currentView];
+
     let minutes = 0;
 
     tasks.forEach(t => {
         minutes += Number(t.temps) || 0;
 
         const item = element("div", "task");
+        item.draggable = true;
+        item.dataset.taskId = t.id;
+
+        item.addEventListener("dragstart", event => {
+            draggedTaskId = t.id;
+            item.classList.add("dragging");
+
+            event.dataTransfer.setData("text/plain", t.id);
+            event.dataTransfer.effectAllowed = "move";
+        });
+
+        item.addEventListener("dragend", () => {
+            draggedTaskId = null;
+            item.classList.remove("dragging");
+
+            document.querySelectorAll(".quadrant").forEach(zone => {
+                zone.classList.remove("drag-over");
+            });
+        });
+
         const title = element("strong", "", t.texte);
-        const time = element("div", "", (t.temps || 0) + " min");
+
+        const time = element(
+            "div",
+            "small-note",
+            formatTime(t.temps)
+        );
 
         const actions = element("div", "task-actions");
 
-        const move = element("select", "move-select");
-
-        [1, 2, 3, 4].forEach(n => {
-            const option = element(
-                "option",
-                "",
-                n + " - " + [
-                    "Urgent",
-                    "À planifier",
-                    "Futur moi",
-                    "Poubelle"
-                ][n - 1]
-            );
-
-            option.value = n;
-            option.selected = Number(t.quadrant) === n;
-            move.append(option);
-        });
-
-        move.title = "Changer la priorité";
-        move.addEventListener("change", () => {
-            deplacerTache(t.id, move.value);
-        });
-
-        const hold = iconButton(
-            "⏸",
-            "hold-btn",
-            "Mettre en attente",
-            () => mettreEnAttente(t.id)
+        // EDIT
+        const edit = iconButton(
+            "✏️",
+            "edit-btn",
+            "Modifier la tâche",
+            () => modifierTache(t.id)
         );
 
+        // HOLD: PRO ONLY
+        if (currentView === "pro") {
+            const hold = iconButton(
+                "⏸",
+                "hold-btn",
+                "Mettre en attente",
+                () => mettreEnAttente(t.id)
+            );
+
+            actions.append(hold);
+        }
+
+        // COMPLETE
         const done = iconButton(
             "✓",
             "complete-btn",
@@ -708,6 +884,7 @@ function afficher() {
             () => terminerTache(t.id)
         );
 
+        // DELETE
         const del = iconButton(
             "🗑",
             "delete-btn",
@@ -715,24 +892,26 @@ function afficher() {
             () => supprimerTache(t.id)
         );
 
-        actions.append(move, hold, done, del);
+        actions.prepend(edit);
+        actions.append(done, del);
+
         item.append(title, time, actions);
 
-        const quadrant = Math.min(
+        const priority = Math.min(
             4,
             Math.max(1, Number(t.quadrant) || 2)
         );
 
-        document.getElementById("q" + quadrant).append(item);
+        document.getElementById("q" + priority).append(item);
     });
 
-    // Workload only applies to Vie Pro.
+    // WORKLOAD: PROFESSIONAL ONLY
     if (currentView === "pro") {
         document.getElementById("nbTaches").textContent =
             tasks.length;
 
         document.getElementById("tempsTotal").textContent =
-            (minutes / 60).toFixed(1) + "h";
+            formatTime(minutes);
 
         let indicator = "🟢";
 
@@ -743,8 +922,11 @@ function afficher() {
             indicator;
     }
 
-    afficherAttente();
-    afficherBanque();
+    if (currentView === "pro") {
+        afficherAttente();
+        afficherBanque();
+    }
+
 }
 
 // WAITING LIST
@@ -753,33 +935,36 @@ function afficherAttente() {
     const list = document.getElementById("waitingList");
     list.replaceChildren();
 
-    const tasks = waiting[currentView];
-
-    if (!tasks.length) {
+    if (!waiting.pro.length) {
         list.append(
             element("p", "small-note", "Aucune tâche en attente.")
         );
         return;
     }
 
-    tasks.forEach(t => {
+    waiting.pro.forEach(t => {
         const row = element("div", "waiting-row");
 
-        const name = element("div", "", t.texte);
-        const who = element("input");
-        who.placeholder = "Qui ?";
-        who.value = t.who || "";
-        who.addEventListener("change", () => {
-            modifierAttente(t.id, "who", who.value);
-        });
+        const name = element("div", "waiting-info", t.texte);
 
-        const notes = element("textarea");
-        notes.placeholder = "Notes...";
-        notes.value = t.notes || "";
-        notes.rows = 2;
-        notes.addEventListener("change", () => {
-            modifierAttente(t.id, "notes", notes.value);
-        });
+        const who = element(
+            "div",
+            "waiting-info",
+            t.who || "Personne non indiquée"
+        );
+
+        const notes = element(
+            "div",
+            "waiting-info waiting-notes",
+            t.notes || "Aucune note"
+        );
+
+        const edit = iconButton(
+            "✏️",
+            "edit-btn",
+            "Modifier la tâche, la personne et les notes",
+            () => modifierAttente(t.id)
+        );
 
         const restore = iconButton(
             "↩",
@@ -788,12 +973,60 @@ function afficherAttente() {
             () => reprendreTache(t.id)
         );
 
-        row.append(name, who, notes, restore);
+        row.append(name, who, notes, edit, restore);
         list.append(row);
     });
 }
 
 // HR BANK
+
+function modifierBanque(id) {
+    const task = bank.find(t => t.id === id);
+    if (!task) return;
+
+    const name = prompt(
+        "Modifier le mot-clé :",
+        task.name
+    );
+
+    if (name === null) return;
+
+    const cleanName = name.trim();
+
+    if (!cleanName) {
+        alert("Le mot-clé ne peut pas être vide.");
+        return;
+    }
+
+    const time = prompt(
+        "Temps estimé en minutes :",
+        task.time
+    );
+
+    if (time === null) return;
+
+    const minutes = Number(time);
+
+    if (!minutes || minutes < 1) {
+        alert("Entre un temps supérieur à zéro.");
+        return;
+    }
+
+    task.name = cleanName;
+    task.time = minutes;
+
+    saveTasks();
+    afficherBanque();
+}
+
+function supprimerBanque(id) {
+    if (!confirm("Supprimer ce mot-clé ?")) return;
+
+    bank = bank.filter(t => t.id !== id);
+
+    saveTasks();
+    afficherBanque();
+}
 
 function afficherBanque() {
     const list = document.getElementById("bankList");
@@ -802,45 +1035,29 @@ function afficherBanque() {
     bank.forEach(t => {
         const row = element("div", "bank-row");
 
-        const name = element("input");
-        name.value = t.name;
-        name.placeholder = "Nom de l'activité";
+        const name = element("strong", "", t.name);
 
-        name.addEventListener("change", () => {
-            t.name = name.value.trim();
-            saveTasks();
-        });
+        const time = element(
+            "span",
+            "small-note",
+            formatTime(t.time)
+        );
 
-        const time = element("input");
-        time.type = "number";
-        time.min = "1";
-        time.value = t.time;
-
-        time.addEventListener("change", () => {
-            const value = Number(time.value);
-
-            if (value > 0) {
-                t.time = value;
-                saveTasks();
-            } else {
-                time.value = t.time;
-            }
-        });
+        const edit = iconButton(
+            "✏️",
+            "edit-btn",
+            "Modifier le mot-clé et le temps",
+            () => modifierBanque(t.id)
+        );
 
         const del = iconButton(
             "🗑",
             "delete-btn",
-            "Supprimer cette activité",
-            () => {
-                if (!confirm("Supprimer cette activité de la banque ?")) return;
-
-                bank = bank.filter(b => b.id !== t.id);
-                saveTasks();
-                afficherBanque();
-            }
+            "Supprimer le mot-clé",
+            () => supprimerBanque(t.id)
         );
 
-        row.append(name, time, del);
+        row.append(name, time, edit, del);
         list.append(row);
     });
 }
@@ -849,17 +1066,17 @@ function ajouterBanque() {
     const name = document.getElementById("bankName");
     const time = document.getElementById("bankTime");
 
-    const activity = name.value.trim();
+    const keyword = name.value.trim();
     const minutes = Number(time.value);
 
-    if (!activity || !minutes || minutes < 1) {
-        alert("Entre un nom et un temps supérieur à zéro.");
+    if (!keyword || !minutes || minutes < 1) {
+        alert("Entre un mot-clé et un temps supérieur à zéro.");
         return;
     }
 
     bank.push({
         id: makeId(),
-        name: activity,
+        name: keyword,
         time: minutes
     });
 
@@ -885,7 +1102,7 @@ function afficherAnalyse() {
         history.length;
 
     document.getElementById("completedTime").textContent =
-        (minutes / 60).toFixed(1) + "h";
+        formatTime(minutes);
 
     document.getElementById("proCount").textContent =
         history.filter(t => t.categorie === "pro").length;
@@ -913,7 +1130,7 @@ function afficherAnalyse() {
                 "div",
                 "",
                 (t.categorie === "pro" ? "Vie Pro" : "Vie Perso") +
-                " • " + (t.temps || 0) + " min"
+                " • " + formatTime(t.temps)
             ),
             element(
                 "div",
@@ -956,11 +1173,13 @@ function changerVue(view) {
     document.getElementById("analysisView")
         .classList.toggle("hidden", !analysis);
 
-    // Hide workload and HR bank in Vie Perso.
     document.getElementById("workloadCard")
         .classList.toggle("hidden", view !== "pro");
 
     document.getElementById("bankCard")
+        .classList.toggle("hidden", view !== "pro");
+
+    document.getElementById("waitingCard")
         .classList.toggle("hidden", view !== "pro");
 
     if (analysis) {
@@ -1002,6 +1221,7 @@ document.querySelectorAll(".tab").forEach(tab => {
 
 // INITIALIZE
 
+configurerDragAndDrop();
 changerVue("pro");
 
 </script>
