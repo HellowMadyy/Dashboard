@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Personnel IA</title>
+
+<style>
+body{
+    font-family:Segoe UI,sans-serif;
+    margin:0;
+    background:#f4f6f8;
+}
+
+header{
+    background:#1f2937;
+    color:white;
+    padding:15px;
+}
+
+.tabs{
+    display:flex;
+}
+
+.tab{
+    padding:10px 20px;
+    cursor:pointer;
+    background:#374151;
+    margin-right:5px;
+    border-radius:6px;
+}
+
+.active{
+    background:#2563eb;
+}
+
+.container{
+    padding:20px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:15px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+.quadrant{
+    min-height:220px;
+    padding:10px;
+    border-radius:10px;
+}
+
+.q1{background:#fee2e2;}
+.q2{background:#fef3c7;}
+.q3{background:#dbeafe;}
+.q4{background:#e5e7eb;}
+
+.task{
+    background:white;
+    border-radius:6px;
+    padding:8px;
+    margin-top:6px;
+}
+
+.kpis{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.kpi{
+    flex:1;
+    background:#f9fafb;
+    padding:10px;
+    border-radius:10px;
+    text-align:center;
+}
+
+input,button{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Mon Dashboard Personnel</h1>
+
+<div class="tabs">
+<div class="tab active">Vie Pro</div>
+<div class="tab">Vie Perso</div>
+</div>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Ajouter une tâche</h2>
+
+<input
+id="taskInput"
+placeholder="Ex: Préparer affichage poste avant vendredi">
+
+<button onclick="ajouterTache()">
+Ajouter
+</button>
+</div>
+
+<div class="card">
+<h2>Charge & efficacité</h2>
+
+<div class="kpis">
+
+<div class="kpi">
+<h3 id="nbTaches">0</h3>
+Tâches
+</div>
+
+<div class="kpi">
+<h3 id="tempsTotal">0h</h3>
+Temps estimé
+</div>
+
+<div class="kpi">
+<h3 id="surcharge">🟢</h3>
+Surcharge
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Priorités</h2>
+
+<div class="grid">
+
+<div class="quadrant q1">
+<h3>1 - À faire de suite</h3>
+<div id="q1"></div>
+</div>
+
+<div class="quadrant q2">
+<h3>2 - À planifier</h3>
+<div id="q2"></div>
+</div>
+
+<div class="quadrant q3">
+<h3>3 - Futur moi</h3>
+<div id="q3"></div>
+</div>
+
+<div class="quadrant q4">
+<h3>4 - Poubelle</h3>
+<div id="q4"></div>
+</div>
+
+</div>
+</div>
+
+<div class="card">
+<h2>Banque RH</h2>
+
+<ul>
+<li>Refus candidature</li>
+<li>Convocation entrevue</li>
+<li>Relance gestionnaire</li>
+<li>Suivi rencontre</li>
+</ul>
+
+</div>
+
+</div>
+
+<script>
+
+let taches =
+JSON.parse(localStorage.getItem("taches")) || [];
+
+function estimationTexte(texte){
+
+texte = texte.toLowerCase();
+
+if(texte.includes("courriel")) return 15;
+
+if(texte.includes("affichage")) return 20;
+
+if(texte.includes("entrevue")) return 60;
+
+if(texte.includes("rencontre")) return 60;
+
+if(texte.includes("rapport")) return 120;
+
+return 30;
+}
+
+function classifier(texte){
+
+texte = texte.toLowerCase();
+
+if(
+texte.includes("urgent") ||
+texte.includes("aujourd")
+){
+return 1;
+}
+
+if(
+texte.includes("idée") ||
+texte.includes("plus tard") ||
+texte.includes("améliorer")
+){
+return 3;
+}
+
+if(
+texte.includes("annuler") ||
+texte.includes("supprimer")
+){
+return 4;
+}
+
+return 2;
+}
+
+function ajouterTache(){
+
+let texte =
+document.getElementById("taskInput").value;
+
+if(!texte) return;
+
+let tache = {
+texte: texte,
+temps: estimationTexte(texte),
+quadrant: classifier(texte)
+};
+
+taches.push(tache);
+
+sauvegarder();
+afficher();
+
+document.getElementById("taskInput").value="";
+}
+
+function sauvegarder(){
+
+localStorage.setItem(
+"taches",
+JSON.stringify(taches)
+);
+
+}
+
+function afficher(){
+
+["q1","q2","q3","q4"].forEach(id=>{
+document.getElementById(id).innerHTML="";
+});
+
+let minutes = 0;
+
+taches.forEach(t=>{
+
+minutes += t.temps;
+
+let item =
+document.createElement("div");
+
+item.className="task";
+
+item.innerHTML=
+"<strong>" +
+t.texte +
+"</strong><br>" +
+t.temps +
+" min";
+
+document
+.getElementById(
+"q"+t.quadrant
+)
+.appendChild(item);
+
+});
+
+document.getElementById("nbTaches").innerText =
+taches.length;
+
+document.getElementById("tempsTotal").innerText =
+(minutes/60).toFixed(1)+"h";
+
+let indicateur="🟢";
+
+if(minutes > 360)
+indicateur="🟡";
+
+if(minutes > 450)
+indicateur="🔴";
+
+document.getElementById("surcharge").innerText =
+indicateur;
+
+}
+
+afficher();
+
+</script>
+
+</body>
+</html>
