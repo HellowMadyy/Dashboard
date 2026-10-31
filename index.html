@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mon Dashboard Personnel</title>
+<title>Dashboard</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -275,11 +275,11 @@ button:hover { opacity: .85; }
 <body>
 
 <header>
-    <h1>Mon Dashboard Personnel</h1>
+    <h1>Dashboard</h1>
 
     <div class="tabs">
-        <button class="tab active" data-view="pro">Vie Pro</button>
-        <button class="tab" data-view="perso">Vie Perso</button>
+        <button class="tab active" data-view="pro">Professionnel</button>
+        <button class="tab" data-view="perso">Personnel</button>
         <button class="tab" data-view="analyse">Analyse & Historique</button>
     </div>
 </header>
@@ -295,7 +295,7 @@ button:hover { opacity: .85; }
             id="taskInput"
             type="text"
             maxlength="300"
-            placeholder="Ex: 1 poste / 2 entrevue Priscilla"
+            placeholder="Ex: 1 Poste / 2 Appel"
         >
 
         <button id="addButton">+ Ajouter une tâche</button>
@@ -372,7 +372,7 @@ button:hover { opacity: .85; }
     </div>
 
     <div id="bankCard" class="card">
-        <h2>Banque RH</h2>
+        <h2>Banque tâches</h2>
 
         <p class="small-note">
             Chaque mot-clé permet de reconnaître une activité
@@ -383,7 +383,7 @@ button:hover { opacity: .85; }
 
         <h3>Ajouter un mot-clé</h3>
 
-        <input id="bankName" placeholder="Ex: entrevue">
+        <input id="bankName" placeholder="Ex: Entrevue">
         <input
             id="bankTime"
             type="number"
@@ -391,7 +391,7 @@ button:hover { opacity: .85; }
             placeholder="Temps en minutes"
         >
 
-        <button id="addBankButton">+ Ajouter à la banque RH</button>
+        <button id="addBankButton">+ Ajouter à la banque tâches</button>
     </div>
 
 </section>
@@ -448,7 +448,7 @@ button:hover { opacity: .85; }
 
         <p class="small-note">
             Les tâches contenant le même mot-clé sont regroupées.
-            Les mots-clés de ta Banque RH sont utilisés en priorité.
+            Les mots-clés de ta Banque des tâches sont utilisés en priorité.
         </p>
 
         <div id="categoryList"></div>
