@@ -340,7 +340,7 @@ button:hover { opacity: .85; }
 
         <div class="grid">
             <div class="quadrant q1" data-priority="1">
-                <h3>1 - À faire de suite</h3>
+                <h3>1 - À faire</h3>
                 <div id="q1"></div>
             </div>
 
@@ -535,10 +535,9 @@ if (!Array.isArray(waiting.pro)) waiting.pro = [];
 if (!Array.isArray(waiting.perso)) waiting.perso = [];
 
 let bank = readStorage(STORAGE.bank, [
-    { id: makeId(), name: "Refus candidature", time: 15 },
-    { id: makeId(), name: "Convocation entrevue", time: 20 },
-    { id: makeId(), name: "Relance gestionnaire", time: 15 },
-    { id: makeId(), name: "Suivi rencontre", time: 30 }
+    { id: makeId(), name: "Poste", time: 10 },
+    { id: makeId(), name: "Entrevue", time: 30 },
+    { id: makeId(), name: "Rencontre", time: 30 },
 ]);
 
 if (!Array.isArray(bank)) bank = [];
@@ -1047,8 +1046,8 @@ function afficher() {
 
         let indicator = "🟢";
 
-        if (minutes > 360) indicator = "🟡";
-        if (minutes > 450) indicator = "🔴";
+        if (minutes > 1800) indicator = "🟡";
+        if (minutes > 2100) indicator = "🔴";
 
         document.getElementById("surcharge").textContent =
             indicator;
