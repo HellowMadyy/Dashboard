@@ -120,7 +120,8 @@ button:hover { opacity: .85; }
 
 .task-actions button,
 .bank-row button,
-.waiting-row button {
+.waiting-row button,
+.history-item button {
     width: 34px;
     height: 34px;
     padding: 0;
@@ -166,8 +167,6 @@ button:hover { opacity: .85; }
     border-bottom: 1px solid #e5e7eb;
 }
 
-.waiting-row button { margin: 0; }
-
 .waiting-info {
     min-width: 0;
     overflow-wrap: anywhere;
@@ -189,19 +188,66 @@ button:hover { opacity: .85; }
     border-radius: 8px;
 }
 
-.bank-row button { margin: 0; }
+.history-category {
+    margin-bottom: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.history-category-title {
+    background: #f3f4f6;
+    padding: 13px;
+}
+
+.history-category-title h3 {
+    margin: 0 0 6px;
+}
+
+.history-category-summary {
+    font-size: 13px;
+    color: #4b5563;
+}
 
 .history-item {
-    background: #f9fafb;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 8px;
+    padding: 13px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.history-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.history-item-top strong {
+    overflow-wrap: anywhere;
+}
+
+.history-times {
+    margin-top: 7px;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.7;
 }
 
 .history-date {
     color: #6b7280;
-    font-size: 13px;
+    font-size: 12px;
     margin-top: 5px;
+}
+
+.history-edit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.accuracy-note {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
 }
 
 .small-note {
@@ -211,11 +257,17 @@ button:hover { opacity: .85; }
 
 @media(max-width: 650px) {
     .grid { grid-template-columns: 1fr; }
+
     .waiting-row {
         grid-template-columns: 1fr auto auto;
     }
+
     .waiting-info { grid-column: 1 / -1; }
     .container { padding: 12px; }
+
+    .history-item-top {
+        flex-direction: column;
+    }
 }
 </style>
 </head>
@@ -236,8 +288,6 @@ button:hover { opacity: .85; }
 
 <section id="tasksView">
 
-    <!-- ADD TASK -->
-
     <div class="card">
         <h2>Ajouter une tâche</h2>
 
@@ -255,8 +305,6 @@ button:hover { opacity: .85; }
             Sans numéro, la tâche ira dans la priorité 2.
         </p>
     </div>
-
-    <!-- WORKLOAD: PRO ONLY -->
 
     <div id="workloadCard" class="card">
         <h2>Charge & efficacité</h2>
@@ -283,8 +331,6 @@ button:hover { opacity: .85; }
         </p>
     </div>
 
-    <!-- PRIORITIES -->
-
     <div class="card">
         <h2>Mes priorités</h2>
 
@@ -293,7 +339,6 @@ button:hover { opacity: .85; }
         </p>
 
         <div class="grid">
-
             <div class="quadrant q1" data-priority="1">
                 <h3>1 - À faire de suite</h3>
                 <div id="q1"></div>
@@ -313,11 +358,8 @@ button:hover { opacity: .85; }
                 <h3>4 - Poubelle</h3>
                 <div id="q4"></div>
             </div>
-
         </div>
     </div>
-
-    <!-- WAITING: PRO ONLY -->
 
     <div id="waitingCard" class="card">
         <h2>🟠 En attente</h2>
@@ -328,8 +370,6 @@ button:hover { opacity: .85; }
 
         <div id="waitingList"></div>
     </div>
-
-    <!-- HR BANK: PRO ONLY -->
 
     <div id="bankCard" class="card">
         <h2>Banque RH</h2>
@@ -356,8 +396,6 @@ button:hover { opacity: .85; }
 
 </section>
 
-<!-- ANALYSIS -->
-
 <section id="analysisView" class="hidden">
 
     <div class="card">
@@ -370,20 +408,50 @@ button:hover { opacity: .85; }
             </div>
 
             <div class="kpi">
-                <h3 id="completedTime">0 min</h3>
-                Temps accompli estimé
+                <h3 id="completedEstimated">0 min</h3>
+                Temps estimé total
             </div>
 
             <div class="kpi">
-                <h3 id="proCount">0</h3>
-                Vie Pro
-            </div>
-
-            <div class="kpi">
-                <h3 id="persoCount">0</h3>
-                Vie Perso
+                <h3 id="completedActual">0 min</h3>
+                Temps réel total
             </div>
         </div>
+    </div>
+
+    <div class="card">
+        <h2>Mon erreur d'estimation</h2>
+
+        <div class="kpis">
+            <div class="kpi">
+                <h3 id="errorPercentage">—</h3>
+                Écart d'estimation
+            </div>
+
+            <div class="kpi">
+                <h3 id="tasksWithActual">0</h3>
+                Tâches comparées
+            </div>
+        </div>
+
+        <p class="accuracy-note">
+            0 % signifie que tes estimations étaient exactes.
+            Plus le pourcentage augmente, plus tes estimations
+            étaient éloignées du temps réellement nécessaire.
+            Le calcul utilise uniquement les tâches pour lesquelles
+            un temps réel a été renseigné.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Mes catégories de travail</h2>
+
+        <p class="small-note">
+            Les tâches contenant le même mot-clé sont regroupées.
+            Les mots-clés de ta Banque RH sont utilisés en priorité.
+        </p>
+
+        <div id="categoryList"></div>
     </div>
 
     <div class="card">
@@ -391,7 +459,7 @@ button:hover { opacity: .85; }
         <div id="historyList"></div>
 
         <button id="clearHistory" style="background:#991b1b">
-            Effacer tout l'historique
+            Effacer tout l'historique professionnel
         </button>
     </div>
 
@@ -523,7 +591,6 @@ function parsePriority(text) {
 function estimationTexte(texte) {
     const lower = texte.toLocaleLowerCase("fr");
 
-    // Explicit time in task text takes priority.
     const explicit = lower.match(
         /(?:^|\s)(\d+)\s*(?:min|minutes?)\b/
     );
@@ -532,7 +599,6 @@ function estimationTexte(texte) {
         return Number(explicit[1]);
     }
 
-    // Match the longest HR keyword contained in the task.
     const matches = bank
         .filter(item =>
             item.name &&
@@ -544,7 +610,6 @@ function estimationTexte(texte) {
         return Number(matches[0].time) || 30;
     }
 
-    // Default estimates.
     if (lower.includes("courriel")) return 15;
     if (lower.includes("affichage")) return 20;
     if (lower.includes("entrevue")) return 60;
@@ -552,6 +617,36 @@ function estimationTexte(texte) {
     if (lower.includes("rapport")) return 120;
 
     return 30;
+}
+
+// CATEGORY FROM KEYWORD
+
+function trouverCategorie(texte) {
+    const lower = texte.toLocaleLowerCase("fr");
+
+    const matches = bank
+        .filter(item =>
+            item.name &&
+            lower.includes(item.name.trim().toLocaleLowerCase("fr"))
+        )
+        .sort((a, b) => b.name.length - a.name.length);
+
+    if (matches.length) {
+        return matches[0].name.trim();
+    }
+
+    // If no Banque RH keyword matches, use the first meaningful word.
+    const words = lower.match(/[\p{L}\p{N}]+/gu) || [];
+
+    const ignored = [
+        "le", "la", "les", "un", "une", "des",
+        "de", "du", "pour", "avec", "sur", "dans",
+        "à", "au", "aux", "et", "en"
+    ];
+
+    const keyword = words.find(word => !ignored.includes(word));
+
+    return keyword || "Autres tâches";
 }
 
 // ADD TASK
@@ -624,7 +719,6 @@ function modifierTache(id) {
 
     task.texte = parsed.text;
 
-    // If a priority number is entered, update the quadrant too.
     if (/^[1-4]\s+/.test(value)) {
         task.quadrant = parsed.priority;
     }
@@ -653,7 +747,6 @@ function configurerDragAndDrop() {
 
         zone.addEventListener("drop", event => {
             event.preventDefault();
-
             zone.classList.remove("drag-over");
 
             if (!draggedTaskId) return;
@@ -693,11 +786,7 @@ function modifierAttente(id) {
     const task = waiting.pro.find(t => t.id === id);
     if (!task) return;
 
-    const newName = prompt(
-        "Nom de la tâche :",
-        task.texte
-    );
-
+    const newName = prompt("Nom de la tâche :", task.texte);
     if (newName === null) return;
 
     const cleanName = newName.trim();
@@ -707,18 +796,10 @@ function modifierAttente(id) {
         return;
     }
 
-    const who = prompt(
-        "Qui ?",
-        task.who || ""
-    );
-
+    const who = prompt("Qui ?", task.who || "");
     if (who === null) return;
 
-    const notes = prompt(
-        "Notes :",
-        task.notes || ""
-    );
-
+    const notes = prompt("Notes :", task.notes || "");
     if (notes === null) return;
 
     task.texte = cleanName;
@@ -753,15 +834,35 @@ function reprendreTache(id) {
 }
 
 // COMPLETE TASK
+// Ask for actual time while preserving the original estimate.
 
 function terminerTache(id) {
     const task = data[currentView].find(t => t.id === id);
     if (!task) return;
 
+    let actualAnswer = prompt(
+        "Combien de minutes cette tâche t'a-t-elle réellement pris ?\n\n" +
+        "Temps estimé : " + formatTime(task.temps) +
+        "\n\nEntre le temps réel en minutes :",
+        String(task.temps || 30)
+    );
+
+    if (actualAnswer === null) return;
+
+    actualAnswer = actualAnswer.trim();
+
+    if (!/^\d+$/.test(actualAnswer) || Number(actualAnswer) < 1) {
+        alert("Entre un nombre de minutes supérieur à zéro.");
+        return;
+    }
+
     const history = readStorage(STORAGE.history, []);
 
     history.push({
         ...task,
+        tempsEstime: Number(task.temps) || 0,
+        tempsReel: Number(actualAnswer),
+        categorieMotCle: trouverCategorie(task.texte),
         categorie: currentView,
         termineLe: new Date().toISOString()
     });
@@ -774,6 +875,46 @@ function terminerTache(id) {
 
     saveTasks();
     afficher();
+}
+
+// EDIT ACTUAL TIME IN HISTORY
+
+function modifierTempsReel(id) {
+    const history = readStorage(STORAGE.history, []);
+    const task = history.find(t => t.id === id);
+
+    if (!task) return;
+
+    const currentActual = task.tempsReel ?? "";
+
+    const answer = prompt(
+        "Modifier le temps réellement passé (en minutes) :\n\n" +
+        "Temps estimé conservé : " +
+        formatTime(task.tempsEstime ?? task.temps),
+        String(currentActual)
+    );
+
+    if (answer === null) return;
+
+    const clean = answer.trim();
+
+    if (!/^\d+$/.test(clean) || Number(clean) < 1) {
+        alert("Entre un nombre de minutes supérieur à zéro.");
+        return;
+    }
+
+    task.tempsReel = Number(clean);
+
+    if (task.tempsEstime === undefined) {
+        task.tempsEstime = Number(task.temps) || 0;
+    }
+
+    if (!task.categorieMotCle) {
+        task.categorieMotCle = trouverCategorie(task.texte);
+    }
+
+    save(STORAGE.history, history);
+    afficherAnalyse();
 }
 
 // DELETE TASK
@@ -805,7 +946,6 @@ function iconButton(icon, className, title, callback) {
 
     button.title = title;
     button.setAttribute("aria-label", title);
-
     button.addEventListener("click", callback);
 
     return button;
@@ -819,7 +959,6 @@ function afficher() {
     });
 
     const tasks = data[currentView];
-
     let minutes = 0;
 
     tasks.forEach(t => {
@@ -832,7 +971,6 @@ function afficher() {
         item.addEventListener("dragstart", event => {
             draggedTaskId = t.id;
             item.classList.add("dragging");
-
             event.dataTransfer.setData("text/plain", t.id);
             event.dataTransfer.effectAllowed = "move";
         });
@@ -847,7 +985,6 @@ function afficher() {
         });
 
         const title = element("strong", "", t.texte);
-
         const time = element(
             "div",
             "small-note",
@@ -856,7 +993,6 @@ function afficher() {
 
         const actions = element("div", "task-actions");
 
-        // EDIT
         const edit = iconButton(
             "✏️",
             "edit-btn",
@@ -864,7 +1000,8 @@ function afficher() {
             () => modifierTache(t.id)
         );
 
-        // HOLD: PRO ONLY
+        actions.append(edit);
+
         if (currentView === "pro") {
             const hold = iconButton(
                 "⏸",
@@ -876,7 +1013,6 @@ function afficher() {
             actions.append(hold);
         }
 
-        // COMPLETE
         const done = iconButton(
             "✓",
             "complete-btn",
@@ -884,7 +1020,6 @@ function afficher() {
             () => terminerTache(t.id)
         );
 
-        // DELETE
         const del = iconButton(
             "🗑",
             "delete-btn",
@@ -892,9 +1027,7 @@ function afficher() {
             () => supprimerTache(t.id)
         );
 
-        actions.prepend(edit);
         actions.append(done, del);
-
         item.append(title, time, actions);
 
         const priority = Math.min(
@@ -905,7 +1038,6 @@ function afficher() {
         document.getElementById("q" + priority).append(item);
     });
 
-    // WORKLOAD: PROFESSIONAL ONLY
     if (currentView === "pro") {
         document.getElementById("nbTaches").textContent =
             tasks.length;
@@ -920,13 +1052,10 @@ function afficher() {
 
         document.getElementById("surcharge").textContent =
             indicator;
-    }
 
-    if (currentView === "pro") {
         afficherAttente();
         afficherBanque();
     }
-
 }
 
 // WAITING LIST
@@ -946,7 +1075,6 @@ function afficherAttente() {
         const row = element("div", "waiting-row");
 
         const name = element("div", "waiting-info", t.texte);
-
         const who = element(
             "div",
             "waiting-info",
@@ -984,11 +1112,7 @@ function modifierBanque(id) {
     const task = bank.find(t => t.id === id);
     if (!task) return;
 
-    const name = prompt(
-        "Modifier le mot-clé :",
-        task.name
-    );
-
+    const name = prompt("Modifier le mot-clé :", task.name);
     if (name === null) return;
 
     const cleanName = name.trim();
@@ -998,11 +1122,7 @@ function modifierBanque(id) {
         return;
     }
 
-    const time = prompt(
-        "Temps estimé en minutes :",
-        task.time
-    );
-
+    const time = prompt("Temps estimé en minutes :", task.time);
     if (time === null) return;
 
     const minutes = Number(time);
@@ -1036,7 +1156,6 @@ function afficherBanque() {
         const row = element("div", "bank-row");
 
         const name = element("strong", "", t.name);
-
         const time = element(
             "span",
             "small-note",
@@ -1091,25 +1210,134 @@ function ajouterBanque() {
 // ANALYSIS
 
 function afficherAnalyse() {
-    const history = readStorage(STORAGE.history, []);
+    const allHistory = readStorage(STORAGE.history, []);
 
-    const minutes = history.reduce(
-        (sum, t) => sum + (Number(t.temps) || 0),
+    // Only professional tasks are included in this analysis.
+    const history = allHistory.filter(
+        t => t.categorie === "pro"
+    );
+
+    const estimatedTotal = history.reduce(
+        (sum, t) => sum + (
+            Number(t.tempsEstime ?? t.temps) || 0
+        ),
         0
     );
+
+    const tasksWithActual = history.filter(
+        t => Number(t.tempsReel) > 0
+    );
+
+    const actualTotal = tasksWithActual.reduce(
+        (sum, t) => sum + Number(t.tempsReel),
+        0
+    );
+
+    const totalDifference = tasksWithActual.reduce(
+        (sum, t) => {
+            const estimated = Number(t.tempsEstime ?? t.temps) || 0;
+            const actual = Number(t.tempsReel) || 0;
+
+            return sum + Math.abs(estimated - actual);
+        },
+        0
+    );
+
+    // Weighted estimation error:
+    // total absolute difference divided by total actual time.
+    const error = actualTotal > 0
+        ? (totalDifference / actualTotal) * 100
+        : null;
 
     document.getElementById("completedCount").textContent =
         history.length;
 
-    document.getElementById("completedTime").textContent =
-        formatTime(minutes);
+    document.getElementById("completedEstimated").textContent =
+        formatTime(estimatedTotal);
 
-    document.getElementById("proCount").textContent =
-        history.filter(t => t.categorie === "pro").length;
+    document.getElementById("completedActual").textContent =
+        formatTime(actualTotal);
 
-    document.getElementById("persoCount").textContent =
-        history.filter(t => t.categorie === "perso").length;
+    document.getElementById("errorPercentage").textContent =
+        error === null ? "—" : Math.round(error) + " %";
 
+    document.getElementById("tasksWithActual").textContent =
+        tasksWithActual.length;
+
+    afficherCategories(history);
+    afficherHistorique(history);
+}
+
+// GROUP TASKS BY CATEGORY
+
+function afficherCategories(history) {
+    const list = document.getElementById("categoryList");
+    list.replaceChildren();
+
+    if (!history.length) {
+        list.append(
+            element("p", "small-note", "Aucune tâche professionnelle terminée.")
+        );
+        return;
+    }
+
+    const groups = {};
+
+    history.forEach(t => {
+        const category =
+            t.categorieMotCle || trouverCategorie(t.texte);
+
+        if (!groups[category]) {
+            groups[category] = [];
+        }
+
+        groups[category].push(t);
+    });
+
+    Object.keys(groups)
+        .sort((a, b) => a.localeCompare(b, "fr"))
+        .forEach(category => {
+            const tasks = groups[category];
+
+            const estimated = tasks.reduce(
+                (sum, t) => sum + (
+                    Number(t.tempsEstime ?? t.temps) || 0
+                ),
+                0
+            );
+
+            const withActual = tasks.filter(
+                t => Number(t.tempsReel) > 0
+            );
+
+            const actual = withActual.reduce(
+                (sum, t) => sum + Number(t.tempsReel),
+                0
+            );
+
+            const group = element("div", "history-category");
+            const heading = element("div", "history-category-title");
+
+            heading.append(
+                element("h3", "", category),
+                element(
+                    "div",
+                    "history-category-summary",
+                    tasks.length + " tâche(s) • Estimé : " +
+                    formatTime(estimated) +
+                    " • Réel renseigné : " +
+                    formatTime(actual)
+                )
+            );
+
+            group.append(heading);
+            list.append(group);
+        });
+}
+
+// HISTORY LIST
+
+function afficherHistorique(history) {
     const list = document.getElementById("historyList");
     list.replaceChildren();
 
@@ -1118,38 +1346,70 @@ function afficherAnalyse() {
     );
 
     if (!sorted.length) {
-        list.append(element("p", "", "Aucune tâche terminée."));
+        list.append(
+            element("p", "small-note", "Aucune tâche professionnelle terminée.")
+        );
+        return;
     }
 
     sorted.forEach(t => {
         const item = element("div", "history-item");
+        const top = element("div", "history-item-top");
 
-        item.append(
-            element("strong", "", "✓ " + t.texte),
-            element(
-                "div",
-                "",
-                (t.categorie === "pro" ? "Vie Pro" : "Vie Perso") +
-                " • " + formatTime(t.temps)
-            ),
-            element(
-                "div",
-                "history-date",
-                "Terminée le : " +
-                (t.termineLe
-                    ? new Date(t.termineLe).toLocaleString("fr-CA")
-                    : "Date inconnue")
-            )
+        const title = element("strong", "", "✓ " + t.texte);
+
+        const editArea = element("div", "history-edit");
+
+        const edit = iconButton(
+            "✏️",
+            "edit-btn",
+            "Modifier le temps réel",
+            () => modifierTempsReel(t.id)
         );
 
+        editArea.append(edit);
+        top.append(title, editArea);
+
+        const estimated = Number(t.tempsEstime ?? t.temps) || 0;
+
+        const actualText = Number(t.tempsReel) > 0
+            ? formatTime(t.tempsReel)
+            : "Non renseigné";
+
+        const times = element(
+            "div",
+            "history-times",
+            "Temps estimé : " + formatTime(estimated) +
+            " | Temps réel : " + actualText
+        );
+
+        const date = element(
+            "div",
+            "history-date",
+            "Terminée le : " +
+            (t.termineLe
+                ? new Date(t.termineLe).toLocaleString("fr-CA")
+                : "Date inconnue")
+        );
+
+        item.append(top, times, date);
         list.append(item);
     });
 }
 
 function viderHistorique() {
-    if (!confirm("Effacer définitivement tout l'historique ?")) return;
+    if (!confirm(
+        "Effacer définitivement tout l'historique professionnel ?"
+    )) return;
 
-    localStorage.removeItem(STORAGE.history);
+    const allHistory = readStorage(STORAGE.history, []);
+
+    // Preserve personal history in storage; remove only professional history.
+    const personalHistory = allHistory.filter(
+        t => t.categorie !== "pro"
+    );
+
+    save(STORAGE.history, personalHistory);
     afficherAnalyse();
 }
 
