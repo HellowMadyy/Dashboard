@@ -1,327 +1,705 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dashboard Personnel IA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Dashboard Personnel</title>
 
 <style>
-body{
-    font-family:Segoe UI,sans-serif;
-    margin:0;
-    background:#f4f6f8;
+* { box-sizing: border-box; }
+
+body {
+    font-family: Segoe UI, sans-serif;
+    margin: 0;
+    background: #f4f6f8;
+    color: #1f2937;
 }
 
-header{
-    background:#1f2937;
-    color:white;
-    padding:15px;
+header {
+    background: #1f2937;
+    color: white;
+    padding: 20px;
 }
 
-.tabs{
-    display:flex;
+header h1 { margin-top: 0; }
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
 }
 
-.tab{
-    padding:10px 20px;
-    cursor:pointer;
-    background:#374151;
-    margin-right:5px;
-    border-radius:6px;
+.tab {
+    padding: 10px 18px;
+    cursor: pointer;
+    background: #374151;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    width: auto;
 }
 
-.active{
-    background:#2563eb;
+.tab.active { background: #2563eb; }
+
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
 }
 
-.container{
-    padding:20px;
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
-.card{
-    background:white;
-    border-radius:12px;
-    padding:15px;
-    margin-bottom:15px;
-    box-shadow:0 2px 6px rgba(0,0,0,.1);
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
-.grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
+.quadrant {
+    min-height: 180px;
+    padding: 12px;
+    border-radius: 10px;
 }
 
-.quadrant{
-    min-height:220px;
-    padding:10px;
-    border-radius:10px;
+.q1 { background: #fee2e2; }
+.q2 { background: #fef3c7; }
+.q3 { background: #dbeafe; }
+.q4 { background: #e5e7eb; }
+
+.task {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 9px;
+    overflow-wrap: anywhere;
 }
 
-.q1{background:#fee2e2;}
-.q2{background:#fef3c7;}
-.q3{background:#dbeafe;}
-.q4{background:#e5e7eb;}
-
-.task{
-    background:white;
-    border-radius:6px;
-    padding:8px;
-    margin-top:6px;
+.task-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
 }
 
-.kpis{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
+.task-actions button {
+    width: auto;
+    flex: 1;
 }
 
-.kpi{
-    flex:1;
-    background:#f9fafb;
-    padding:10px;
-    border-radius:10px;
-    text-align:center;
+.kpis {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-input,button{
-    width:100%;
-    padding:10px;
-    margin-top:5px;
+.kpi {
+    flex: 1;
+    min-width: 110px;
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
 }
 
-button{
-    background:#2563eb;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
+.kpi h3 {
+    font-size: 25px;
+    margin: 5px;
+}
+
+input, button {
+    width: 100%;
+    padding: 11px;
+    margin-top: 7px;
+    font: inherit;
+}
+
+input {
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+}
+
+button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover { opacity: .88; }
+
+.complete-btn { background: #15803d; }
+.delete-btn { background: #dc2626; }
+.clear-btn { background: #991b1b; }
+
+.secondary-btn { background: #4b5563; }
+
+.history-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 9px;
+    overflow-wrap: anywhere;
+}
+
+.history-date {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 6px;
+}
+
+.hidden { display: none; }
+
+.section-title {
+    margin-top: 0;
+}
+
+@media(max-width: 650px) {
+    .grid { grid-template-columns: 1fr; }
+    .container { padding: 12px; }
+    header { padding: 15px; }
 }
 </style>
 </head>
+
 <body>
 
 <header>
-<h1>Mon Dashboard Personnel</h1>
+    <h1>Mon Dashboard Personnel</h1>
 
-<div class="tabs">
-<div class="tab active">Vie Pro</div>
-<div class="tab">Vie Perso</div>
-</div>
+    <div class="tabs">
+        <button class="tab active" data-view="pro">Vie Pro</button>
+        <button class="tab" data-view="perso">Vie Perso</button>
+        <button class="tab" data-view="analyse">Analyse & Historique</button>
+    </div>
 </header>
 
 <div class="container">
 
-<div class="card">
-<h2>Ajouter une tâche</h2>
+    <!-- ACTIVE TASKS -->
 
-<input
-id="taskInput"
-placeholder="Ex: Préparer affichage poste avant vendredi">
+    <section id="tasksView">
 
-<button onclick="ajouterTache()">
-Ajouter
-</button>
-</div>
+        <div class="card">
+            <h2>Ajouter une tâche</h2>
 
-<div class="card">
-<h2>Charge & efficacité</h2>
+            <input
+                id="taskInput"
+                type="text"
+                maxlength="300"
+                placeholder="Ex: Préparer affichage poste avant vendredi"
+            >
 
-<div class="kpis">
+            <button id="addButton">+ Ajouter une tâche</button>
+        </div>
 
-<div class="kpi">
-<h3 id="nbTaches">0</h3>
-Tâches
-</div>
+        <div class="card">
+            <h2>Charge & efficacité</h2>
 
-<div class="kpi">
-<h3 id="tempsTotal">0h</h3>
-Temps estimé
-</div>
+            <div class="kpis">
+                <div class="kpi">
+                    <h3 id="nbTaches">0</h3>
+                    Tâches actives
+                </div>
 
-<div class="kpi">
-<h3 id="surcharge">🟢</h3>
-Surcharge
-</div>
+                <div class="kpi">
+                    <h3 id="tempsTotal">0h</h3>
+                    Temps estimé
+                </div>
 
-</div>
+                <div class="kpi">
+                    <h3 id="surcharge">🟢</h3>
+                    Surcharge
+                </div>
+            </div>
+        </div>
 
-</div>
+        <div class="card">
+            <h2>Mes priorités</h2>
 
-<div class="card">
+            <div class="grid">
 
-<h2>Priorités</h2>
+                <div class="quadrant q1">
+                    <h3>1 - À faire de suite</h3>
+                    <div id="q1"></div>
+                </div>
 
-<div class="grid">
+                <div class="quadrant q2">
+                    <h3>2 - À planifier</h3>
+                    <div id="q2"></div>
+                </div>
 
-<div class="quadrant q1">
-<h3>1 - À faire de suite</h3>
-<div id="q1"></div>
-</div>
+                <div class="quadrant q3">
+                    <h3>3 - Futur moi</h3>
+                    <div id="q3"></div>
+                </div>
 
-<div class="quadrant q2">
-<h3>2 - À planifier</h3>
-<div id="q2"></div>
-</div>
+                <div class="quadrant q4">
+                    <h3>4 - Poubelle</h3>
+                    <div id="q4"></div>
+                </div>
 
-<div class="quadrant q3">
-<h3>3 - Futur moi</h3>
-<div id="q3"></div>
-</div>
+            </div>
+        </div>
 
-<div class="quadrant q4">
-<h3>4 - Poubelle</h3>
-<div id="q4"></div>
-</div>
+        <div class="card">
+            <h2>Banque RH</h2>
+            <ul>
+                <li>Refus candidature</li>
+                <li>Convocation entrevue</li>
+                <li>Relance gestionnaire</li>
+                <li>Suivi rencontre</li>
+            </ul>
+        </div>
 
-</div>
-</div>
+    </section>
 
-<div class="card">
-<h2>Banque RH</h2>
+    <!-- COMPLETED TASKS AND ANALYSIS -->
 
-<ul>
-<li>Refus candidature</li>
-<li>Convocation entrevue</li>
-<li>Relance gestionnaire</li>
-<li>Suivi rencontre</li>
-</ul>
+    <section id="analysisView" class="hidden">
 
-</div>
+        <div class="card">
+            <h2>Analyse de mon travail</h2>
+
+            <div class="kpis">
+                <div class="kpi">
+                    <h3 id="completedCount">0</h3>
+                    Tâches terminées
+                </div>
+
+                <div class="kpi">
+                    <h3 id="completedTime">0h</h3>
+                    Temps estimé accompli
+                </div>
+
+                <div class="kpi">
+                    <h3 id="proCount">0</h3>
+                    Tâches professionnelles
+                </div>
+
+                <div class="kpi">
+                    <h3 id="persoCount">0</h3>
+                    Tâches personnelles
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Historique des tâches terminées</h2>
+
+            <p>
+                Toutes tes tâches terminées sont conservées ici,
+                même lorsque tu changes d'onglet.
+            </p>
+
+            <div id="historyList"></div>
+
+            <button id="clearHistory" class="clear-btn">
+                Effacer tout l'historique
+            </button>
+        </div>
+
+    </section>
 
 </div>
 
 <script>
 
-let taches =
-JSON.parse(localStorage.getItem("taches")) || [];
+// STORAGE
+// Vie Pro and Vie Perso have separate storage.
 
-function estimationTexte(texte){
-
-texte = texte.toLowerCase();
-
-if(texte.includes("courriel")) return 15;
-
-if(texte.includes("affichage")) return 20;
-
-if(texte.includes("entrevue")) return 60;
-
-if(texte.includes("rencontre")) return 60;
-
-if(texte.includes("rapport")) return 120;
-
-return 30;
-}
-
-function classifier(texte){
-
-texte = texte.toLowerCase();
-
-if(
-texte.includes("urgent") ||
-texte.includes("aujourd")
-){
-return 1;
-}
-
-if(
-texte.includes("idée") ||
-texte.includes("plus tard") ||
-texte.includes("améliorer")
-){
-return 3;
-}
-
-if(
-texte.includes("annuler") ||
-texte.includes("supprimer")
-){
-return 4;
-}
-
-return 2;
-}
-
-function ajouterTache(){
-
-let texte =
-document.getElementById("taskInput").value;
-
-if(!texte) return;
-
-let tache = {
-texte: texte,
-temps: estimationTexte(texte),
-quadrant: classifier(texte)
+const STORAGE = {
+    pro: "dashboard_taches_pro",
+    perso: "dashboard_taches_perso"
 };
 
-taches.push(tache);
+let currentView = "pro";
 
-sauvegarder();
-afficher();
+function loadTasks(type) {
+    try {
+        const data = localStorage.getItem(STORAGE[type]);
+        const parsed = data ? JSON.parse(data) : [];
 
-document.getElementById("taskInput").value="";
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
 }
 
-function sauvegarder(){
+let data = {
+    pro: loadTasks("pro"),
+    perso: loadTasks("perso")
+};
 
-localStorage.setItem(
-"taches",
-JSON.stringify(taches)
+function saveTasks(type) {
+    localStorage.setItem(
+        STORAGE[type],
+        JSON.stringify(data[type])
+    );
+}
+
+// TASK ESTIMATION
+
+function estimationTexte(texte) {
+    texte = texte.toLowerCase();
+
+    if (texte.includes("courriel")) return 15;
+    if (texte.includes("affichage")) return 20;
+    if (texte.includes("entrevue")) return 60;
+    if (texte.includes("rencontre")) return 60;
+    if (texte.includes("rapport")) return 120;
+
+    return 30;
+}
+
+// PRIORITY CLASSIFICATION
+
+function classifier(texte) {
+    texte = texte.toLowerCase();
+
+    if (
+        texte.includes("urgent") ||
+        texte.includes("aujourd")
+    ) return 1;
+
+    if (
+        texte.includes("idée") ||
+        texte.includes("plus tard") ||
+        texte.includes("améliorer")
+    ) return 3;
+
+    if (
+        texte.includes("annuler") ||
+        texte.includes("supprimer")
+    ) return 4;
+
+    return 2;
+}
+
+// ADD TASK
+
+function ajouterTache() {
+    const input = document.getElementById("taskInput");
+    const texte = input.value.trim();
+
+    if (!texte) {
+        alert("Écris une tâche avant de l'ajouter.");
+        return;
+    }
+
+    const tache = {
+        id: Date.now().toString() + Math.random().toString(16).slice(2),
+        texte: texte,
+        temps: estimationTexte(texte),
+        quadrant: classifier(texte),
+        creeLe: new Date().toISOString()
+    };
+
+    data[currentView].push(tache);
+
+    saveTasks(currentView);
+    afficher();
+
+    input.value = "";
+    input.focus();
+}
+
+// COMPLETE TASK
+
+function terminerTache(id) {
+    const task = data[currentView].find(t => t.id === id);
+
+    if (!task) return;
+
+    task.termineLe = new Date().toISOString();
+
+    data[currentView] = data[currentView].filter(
+        t => t.id !== id
+    );
+
+    // Completed tasks are stored in their own history.
+    const historyKey = "dashboard_taches_terminees";
+
+    let history = [];
+
+    try {
+        history = JSON.parse(
+            localStorage.getItem(historyKey)
+        ) || [];
+    } catch {
+        history = [];
+    }
+
+    history.push({
+        ...task,
+        categorie: currentView
+    });
+
+    localStorage.setItem(
+        historyKey,
+        JSON.stringify(history)
+    );
+
+    saveTasks(currentView);
+
+    afficher();
+}
+
+// DELETE TASK
+
+function supprimerTache(id) {
+    const confirmation = confirm(
+        "Veux-tu vraiment supprimer cette tâche définitivement ?"
+    );
+
+    if (!confirmation) return;
+
+    data[currentView] = data[currentView].filter(
+        t => t.id !== id
+    );
+
+    saveTasks(currentView);
+    afficher();
+}
+
+// HISTORY
+
+function getHistory() {
+    try {
+        const history = JSON.parse(
+            localStorage.getItem("dashboard_taches_terminees")
+        );
+
+        return Array.isArray(history) ? history : [];
+    } catch {
+        return [];
+    }
+}
+
+function viderHistorique() {
+    const confirmation = confirm(
+        "Attention : veux-tu vraiment effacer TOUTES les tâches terminées ? Cette action est définitive."
+    );
+
+    if (!confirmation) return;
+
+    localStorage.removeItem("dashboard_taches_terminees");
+
+    afficherAnalyse();
+}
+
+// SAFE ELEMENT CREATION
+
+function creerElement(tag, className, texte) {
+    const element = document.createElement(tag);
+
+    if (className) element.className = className;
+    if (texte !== undefined) element.textContent = texte;
+
+    return element;
+}
+
+// DISPLAY ACTIVE TASKS
+
+function afficher() {
+    ["q1", "q2", "q3", "q4"].forEach(id => {
+        document.getElementById(id).replaceChildren();
+    });
+
+    const taches = data[currentView];
+
+    let minutes = 0;
+
+    taches.forEach(t => {
+        minutes += Number(t.temps) || 0;
+
+        const item = creerElement("div", "task");
+
+        const title = creerElement("strong", "", t.texte);
+        const time = creerElement(
+            "div",
+            "",
+            (t.temps || 0) + " min"
+        );
+
+        const actions = creerElement("div", "task-actions");
+
+        const doneButton = creerElement(
+            "button",
+            "complete-btn",
+            "✓ Terminé"
+        );
+
+        doneButton.addEventListener("click", () => {
+            terminerTache(t.id);
+        });
+
+        const deleteButton = creerElement(
+            "button",
+            "delete-btn",
+            "🗑 Supprimer"
+        );
+
+        deleteButton.addEventListener("click", () => {
+            supprimerTache(t.id);
+        });
+
+        actions.append(doneButton, deleteButton);
+        item.append(title, time, actions);
+
+        const quadrant = Math.min(
+            4,
+            Math.max(1, Number(t.quadrant) || 2)
+        );
+
+        document.getElementById("q" + quadrant).append(item);
+    });
+
+    document.getElementById("nbTaches").textContent =
+        taches.length;
+
+    document.getElementById("tempsTotal").textContent =
+        (minutes / 60).toFixed(1) + "h";
+
+    let indicateur = "🟢";
+
+    if (minutes > 360) indicateur = "🟡";
+    if (minutes > 450) indicateur = "🔴";
+
+    document.getElementById("surcharge").textContent =
+        indicateur;
+}
+
+// DISPLAY COMPLETED TASKS AND ANALYSIS
+
+function afficherAnalyse() {
+    const history = getHistory();
+
+    const totalMinutes = history.reduce(
+        (sum, t) => sum + (Number(t.temps) || 0),
+        0
+    );
+
+    document.getElementById("completedCount").textContent =
+        history.length;
+
+    document.getElementById("completedTime").textContent =
+        (totalMinutes / 60).toFixed(1) + "h";
+
+    document.getElementById("proCount").textContent =
+        history.filter(t => t.categorie === "pro").length;
+
+    document.getElementById("persoCount").textContent =
+        history.filter(t => t.categorie === "perso").length;
+
+    const list = document.getElementById("historyList");
+    list.replaceChildren();
+
+    if (history.length === 0) {
+        list.append(
+            creerElement(
+                "p",
+                "",
+                "Aucune tâche terminée pour le moment."
+            )
+        );
+        return;
+    }
+
+    const sorted = [...history].sort(
+        (a, b) =>
+            new Date(b.termineLe) - new Date(a.termineLe)
+    );
+
+    sorted.forEach(t => {
+        const item = creerElement("div", "history-item");
+
+        const title = creerElement("strong", "", "✓ " + t.texte);
+
+        const category = t.categorie === "pro"
+            ? "Vie Pro"
+            : "Vie Perso";
+
+        const details = creerElement(
+            "div",
+            "",
+            category + " • " + (t.temps || 0) + " min"
+        );
+
+        const date = t.termineLe
+            ? new Date(t.termineLe).toLocaleString("fr-CA")
+            : "Date inconnue";
+
+        const dateElement = creerElement(
+            "div",
+            "history-date",
+            "Terminée le : " + date
+        );
+
+        item.append(title, details, dateElement);
+        list.append(item);
+    });
+}
+
+// NAVIGATION
+
+function changerVue(view) {
+    currentView = view;
+
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.toggle(
+            "active",
+            tab.dataset.view === view
+        );
+    });
+
+    const isAnalysis = view === "analyse";
+
+    document.getElementById("tasksView")
+        .classList.toggle("hidden", isAnalysis);
+
+    document.getElementById("analysisView")
+        .classList.toggle("hidden", !isAnalysis);
+
+    if (isAnalysis) {
+        afficherAnalyse();
+    } else {
+        afficher();
+    }
+}
+
+// BUTTON EVENTS
+
+document.getElementById("addButton").addEventListener(
+    "click",
+    ajouterTache
 );
 
-}
+document.getElementById("taskInput").addEventListener(
+    "keydown",
+    event => {
+        if (event.key === "Enter") ajouterTache();
+    }
+);
 
-function afficher(){
-
-["q1","q2","q3","q4"].forEach(id=>{
-document.getElementById(id).innerHTML="";
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        changerVue(tab.dataset.view);
+    });
 });
 
-let minutes = 0;
+document.getElementById("clearHistory").addEventListener(
+    "click",
+    viderHistorique
+);
 
-taches.forEach(t=>{
-
-minutes += t.temps;
-
-let item =
-document.createElement("div");
-
-item.className="task";
-
-item.innerHTML=
-"<strong>" +
-t.texte +
-"</strong><br>" +
-t.temps +
-" min";
-
-document
-.getElementById(
-"q"+t.quadrant
-)
-.appendChild(item);
-
-});
-
-document.getElementById("nbTaches").innerText =
-taches.length;
-
-document.getElementById("tempsTotal").innerText =
-(minutes/60).toFixed(1)+"h";
-
-let indicateur="🟢";
-
-if(minutes > 360)
-indicateur="🟡";
-
-if(minutes > 450)
-indicateur="🔴";
-
-document.getElementById("surcharge").innerText =
-indicateur;
-
-}
+// START
 
 afficher();
 
@@ -329,3 +707,4 @@ afficher();
 
 </body>
 </html>
+```
