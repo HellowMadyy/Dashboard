@@ -525,10 +525,14 @@ function readStorage(key, fallback) {
 }
 
 function save(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-    queueCloudSave();
-}
+    const oldValue = readStorage(key, null);
 
+    localStorage.setItem(key, JSON.stringify(value));
+
+    if (cloudReady && signedInUser) {
+        recordLocalDiff(key, oldValue, value);
+    }
+}
 function makeId() {
     return Date.now().toString() +
         Math.random().toString(16).slice(2);
@@ -1566,57 +1570,214 @@ function collectLocalRows() {
     return rows;
 }
 
-function queueCloudSave() {
-    if (!cloudReady || !signedInUser) return;
-    clearTimeout(cloudSaveTimer);
-    cloudSaveTimer = setTimeout(saveEverythingToCloud, 700);
+// SAFE CLOUD SYNC: send only the rows that actually changed.
+
+const pendingTaskUpserts = new Map();
+const pendingTaskDeletes = new Set();
+const pendingBankUpserts = new Map();
+const pendingBankDeletes = new Set();
+
+function rowsForStorage(key, value) {
+    const result = { tasks: [], bank: [] };
+
+    if (key === STORAGE.bank) {
+        (value || []).forEach(item => {
+            item.id = ensureUuid(item.id);
+            result.bank.push({
+                id: item.id,
+                user_id: signedInUser.id,
+                keyword: item.name,
+                estimated_minutes: Number(item.time) || 30
+            });
+        });
+        return result;
+    }
+
+    let tasks = [];
+
+    if (key === STORAGE.pro || key === STORAGE.perso) {
+        const category = key === STORAGE.pro ? "pro" : "perso";
+
+        tasks = (value || []).map(task => ({
+            task,
+            category,
+            status: "active"
+        }));
+    }
+
+    if (key === STORAGE.waiting) {
+        const waitingData = Array.isArray(value)
+            ? { pro: value, perso: [] }
+            : (value || { pro: [], perso: [] });
+
+        ["pro", "perso"].forEach(category => {
+            (waitingData[category] || []).forEach(task => {
+                tasks.push({ task, category, status: "waiting" });
+            });
+        });
+    }
+
+    if (key === STORAGE.history) {
+        (value || []).forEach(task => {
+            tasks.push({
+                task,
+                category: task.categorie === "perso" ? "perso" : "pro",
+                status: "completed"
+            });
+        });
+    }
+
+    tasks.forEach(({ task, category, status }) => {
+        task.id = ensureUuid(task.id);
+
+        result.tasks.push({
+            id: task.id,
+            user_id: signedInUser.id,
+            title: task.texte,
+            category,
+            quadrant: Number(task.quadrant) || 2,
+            status,
+            waiting_for: task.who || null,
+            notes: task.notes || "",
+            estimated_minutes: Number(task.tempsEstime ?? task.temps) || 0,
+            actual_minutes: Number(task.tempsReel) || null,
+            created_at: task.creeLe || task.termineLe || new Date().toISOString(),
+            completed_at: status === "completed"
+                ? (task.termineLe || new Date().toISOString())
+                : null
+        });
+    });
+
+    return result;
 }
 
-async function saveEverythingToCloud() {
+function recordLocalDiff(key, oldValue, newValue) {
+    const oldRows = rowsForStorage(key, oldValue);
+    const newRows = rowsForStorage(key, newValue);
+
+    const oldTasks = new Map(oldRows.tasks.map(row => [row.id, row]));
+    const newTasks = new Map(newRows.tasks.map(row => [row.id, row]));
+
+    oldTasks.forEach((row, id) => {
+        if (!newTasks.has(id)) {
+            pendingTaskUpserts.delete(id);
+            pendingTaskDeletes.add(id);
+        }
+    });
+
+    newTasks.forEach((row, id) => {
+        const previous = oldTasks.get(id);
+
+        if (!previous || JSON.stringify(previous) !== JSON.stringify(row)) {
+            pendingTaskDeletes.delete(id);
+            pendingTaskUpserts.set(id, row);
+        }
+    });
+
+    const oldBank = new Map(oldRows.bank.map(row => [row.id, row]));
+    const newBank = new Map(newRows.bank.map(row => [row.id, row]));
+
+    oldBank.forEach((row, id) => {
+        if (!newBank.has(id)) {
+            pendingBankUpserts.delete(id);
+            pendingBankDeletes.add(id);
+        }
+    });
+
+    newBank.forEach((row, id) => {
+        const previous = oldBank.get(id);
+
+        if (!previous || JSON.stringify(previous) !== JSON.stringify(row)) {
+            pendingBankDeletes.delete(id);
+            pendingBankUpserts.set(id, row);
+        }
+    });
+
+    queueCloudSave();
+}
+
+function queueCloudSave() {
     if (!cloudReady || !signedInUser) return;
-    const taskRows = collectLocalRows();
-    const bankRows = bank.map(item => ({
-        id: ensureUuid(item.id), user_id: signedInUser.id,
-        keyword: item.name, estimated_minutes: Number(item.time) || 30
-    }));
-    bank.forEach((item, index) => item.id = bankRows[index].id);
 
-    const { error: taskError } = await supabaseClient.from("tasks").upsert(taskRows);
-    if (taskError) {
-        showLoginMessage("Erreur de sauvegarde des tâches : " + taskError.message);
-        return;
-    }
-    const { data: storedTasks, error: readTaskError } = await supabaseClient
-        .from("tasks").select("id").eq("user_id", signedInUser.id);
-    if (readTaskError) {
-        showLoginMessage("Lecture des tâches impossible : " + readTaskError.message);
-        return;
-    }
-    const keepTaskIds = new Set(taskRows.map(row => row.id));
-    const staleTaskIds = (storedTasks || []).map(row => row.id).filter(id => !keepTaskIds.has(id));
-    if (staleTaskIds.length) {
-        const { error } = await supabaseClient.from("tasks").delete().eq("user_id", signedInUser.id).in("id", staleTaskIds);
-        if (error) { showLoginMessage("Nettoyage des anciennes tâches impossible : " + error.message); return; }
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(flushCloudChanges, 700);
+}
+
+async function flushCloudChanges() {
+    if (!cloudReady || !signedInUser) return;
+
+    const taskUpserts = [...pendingTaskUpserts.values()];
+    const taskDeletes = [...pendingTaskDeletes];
+    const bankUpserts = [...pendingBankUpserts.values()];
+    const bankDeletes = [...pendingBankDeletes];
+
+    pendingTaskUpserts.clear();
+    pendingTaskDeletes.clear();
+    pendingBankUpserts.clear();
+    pendingBankDeletes.clear();
+
+    if (taskUpserts.length) {
+        const { error } = await supabaseClient
+            .from("tasks")
+            .upsert(taskUpserts);
+
+        if (error) {
+            taskUpserts.forEach(row => pendingTaskUpserts.set(row.id, row));
+            showLoginMessage("Erreur de sauvegarde : " + error.message);
+            return;
+        }
     }
 
-    const { error: bankError } = await supabaseClient.from("task_bank").upsert(bankRows);
-    if (bankError) { showLoginMessage("Erreur de sauvegarde de la banque : " + bankError.message); return; }
-    const { data: storedBank, error: readBankError } = await supabaseClient
-        .from("task_bank").select("id").eq("user_id", signedInUser.id);
-    if (readBankError) { showLoginMessage("Lecture de la banque impossible : " + readBankError.message); return; }
-    const keepBankIds = new Set(bankRows.map(row => row.id));
-    const staleBankIds = (storedBank || []).map(row => row.id).filter(id => !keepBankIds.has(id));
-    if (staleBankIds.length) {
-        const { error } = await supabaseClient.from("task_bank").delete().eq("user_id", signedInUser.id).in("id", staleBankIds);
-        if (error) { showLoginMessage("Nettoyage de la banque impossible : " + error.message); return; }
+    if (taskDeletes.length) {
+        const { error } = await supabaseClient
+            .from("tasks")
+            .delete()
+            .eq("user_id", signedInUser.id)
+            .in("id", taskDeletes);
+
+        if (error) {
+            taskDeletes.forEach(id => pendingTaskDeletes.add(id));
+            showLoginMessage("Erreur de suppression : " + error.message);
+            return;
+        }
     }
-    // Write locally without scheduling another cloud save.
-    localStorage.setItem(STORAGE.pro, JSON.stringify(data.pro));
-    localStorage.setItem(STORAGE.perso, JSON.stringify(data.perso));
-    localStorage.setItem(STORAGE.waiting, JSON.stringify(waiting));
-    localStorage.setItem(STORAGE.bank, JSON.stringify(bank));
-    localStorage.setItem(STORAGE.history, JSON.stringify(readStorage(STORAGE.history, [])));
+
+    if (bankUpserts.length) {
+        const { error } = await supabaseClient
+            .from("task_bank")
+            .upsert(bankUpserts);
+
+        if (error) {
+            bankUpserts.forEach(row => pendingBankUpserts.set(row.id, row));
+            showLoginMessage("Erreur de sauvegarde de la banque : " + error.message);
+            return;
+        }
+    }
+
+    if (bankDeletes.length) {
+        const { error } = await supabaseClient
+            .from("task_bank")
+            .delete()
+            .eq("user_id", signedInUser.id)
+            .in("id", bankDeletes);
+
+        if (error) {
+            bankDeletes.forEach(id => pendingBankDeletes.add(id));
+            showLoginMessage("Erreur de suppression de la banque : " + error.message);
+            return;
+        }
+    }
+
     showLoginMessage("Toutes les modifications sont sauvegardées dans ton compte.");
+
+    if (
+        pendingTaskUpserts.size ||
+        pendingTaskDeletes.size ||
+        pendingBankUpserts.size ||
+        pendingBankDeletes.size
+    ) {
+        queueCloudSave();
+    }
 }
 
 function restoreRows(rows) {
@@ -1690,6 +1851,53 @@ async function loadUserDashboard(user) {
     // On a first login with an empty cloud table, this imports the browser's existing data.
     await saveEverythingToCloud();
 }
+
+    // Refresh from the cloud when returning to this device.
+
+async function refreshDashboardFromCloud() {
+    if (!cloudReady || !signedInUser) return;
+
+    if (
+        cloudSaveTimer ||
+        pendingTaskUpserts.size ||
+        pendingTaskDeletes.size ||
+        pendingBankUpserts.size ||
+        pendingBankDeletes.size
+    ) return;
+
+    const userId = signedInUser.id;
+
+    const [{ data: taskRows, error: taskError },
+           { data: bankRows, error: bankError }] = await Promise.all([
+        supabaseClient.from("tasks").select("*").eq("user_id", userId),
+        supabaseClient.from("task_bank").select("*").eq("user_id", userId)
+    ]);
+
+    if (taskError || bankError || !cloudReady || signedInUser?.id !== userId) {
+        return;
+    }
+
+    cloudReady = false;
+
+    restoreRows(taskRows || []);
+
+    bank = (bankRows || []).map(row => ({
+        id: row.id,
+        name: row.keyword,
+        time: Number(row.estimated_minutes) || 30
+    }));
+
+    localStorage.setItem(STORAGE.bank, JSON.stringify(bank));
+
+    cloudReady = true;
+    changerVue(currentView);
+}
+
+window.addEventListener("focus", refreshDashboardFromCloud);
+
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshDashboardFromCloud();
+});
 
 async function startAuthentication() {
     if (!supabaseConfigured) {
