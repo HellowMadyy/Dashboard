@@ -11,7 +11,7 @@
 body {
     font-family: Segoe UI, sans-serif;
     margin: 0;
-    background: #f4f6f8;
+    background: #dcebfa;
     color: #1f2937;
 }
 
@@ -274,7 +274,7 @@ button:hover { opacity: .85; }
 
 <body>
 
-<header>
+<header id="appHeader" class="hidden">
     <h1>Dashboard</h1>
 
     <div class="tabs">
@@ -284,6 +284,20 @@ button:hover { opacity: .85; }
     </div>
 </header>
 
+<div id="loginPanel" class="container">
+    <div class="card" style="max-width:480px;margin:30px auto">
+        <h2>Connexion à mon Dashboard</h2>
+        <p class="small-note">Connecte-toi avec le compte créé dans Supabase. Tes tâches seront privées à ton compte.</p>
+        <label for="loginEmail">Adresse courriel</label>
+        <input id="loginEmail" type="email" autocomplete="username" placeholder="Ton adresse courriel">
+        <label for="loginPassword">Mot de passe</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Ton mot de passe">
+        <button id="loginButton">Se connecter</button>
+        <p id="loginMessage" class="small-note" role="status">Configure d’abord les deux paramètres Supabase dans le fichier, comme indiqué dans les instructions.</p>
+    </div>
+</div>
+
+<div id="appArea" class="hidden">
 <div class="container">
 
 <section id="tasksView">
@@ -466,8 +480,30 @@ button:hover { opacity: .85; }
 </section>
 
 </div>
+</div>
+<div id="accountBar" class="hidden" style="background:#e5e7eb;padding:8px 20px;text-align:right">
+    <span id="signedInEmail" class="small-note"></span>
+    <button id="logoutButton" style="width:auto;margin-left:10px;padding:7px 12px">Se déconnecter</button>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
+// SUPABASE CONFIGURATION: replace only these two values with your project's URL and Publishable key.
+const SUPABASE_URL = "https://piwgijkdfkjmvyissdvk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_wWsSdiUdRXF37GSDA5epzg_RriZP37l";
+const supabaseConfigured = !SUPABASE_URL.includes("PASTE_") && !SUPABASE_PUBLISHABLE_KEY.includes("PASTE_");
+const supabaseClient = supabaseConfigured
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+    : null;
+let signedInUser = null;
+let loadingUserId = null;
+let cloudReady = false;
+let cloudSaveTimer = null;
+
+function showLoginMessage(message) {
+    document.getElementById("loginMessage").textContent = message;
+}
 
 // STORAGE
 
@@ -490,6 +526,7 @@ function readStorage(key, fallback) {
 
 function save(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+    queueCloudSave();
 }
 
 function makeId() {
@@ -551,6 +588,7 @@ function saveTasks() {
     save(STORAGE.perso, data.perso);
     save(STORAGE.waiting, waiting);
     save(STORAGE.bank, bank);
+    queueCloudSave();
 }
 
 // FORMAT TIME
@@ -867,6 +905,7 @@ function terminerTache(id) {
     });
 
     save(STORAGE.history, history);
+    queueCloudSave();
 
     data[currentView] = data[currentView].filter(
         t => t.id !== id
@@ -913,6 +952,7 @@ function modifierTempsReel(id) {
     }
 
     save(STORAGE.history, history);
+    queueCloudSave();
     afficherAnalyse();
 }
 
@@ -1409,6 +1449,7 @@ function viderHistorique() {
     );
 
     save(STORAGE.history, personalHistory);
+    queueCloudSave();
     afficherAnalyse();
 }
 
@@ -1478,10 +1519,223 @@ document.querySelectorAll(".tab").forEach(tab => {
     });
 });
 
-// INITIALIZE
+// CLOUD STORAGE: each row is always restricted to the signed-in user by Supabase RLS.
+function ensureUuid(value) {
+    const validUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return validUuid.test(String(value || "")) ? value : crypto.randomUUID();
+}
 
+function collectLocalRows() {
+    const rows = [];
+    for (const category of ["pro", "perso"]) {
+        for (const task of data[category]) {
+            task.id = ensureUuid(task.id);
+            rows.push({
+                id: task.id, user_id: signedInUser.id, title: task.texte,
+                category, quadrant: Number(task.quadrant) || 2, status: "active",
+                waiting_for: null, notes: "", estimated_minutes: Number(task.temps) || 0,
+                actual_minutes: null, created_at: task.creeLe || new Date().toISOString(), completed_at: null
+            });
+        }
+    }
+    for (const category of ["pro", "perso"]) {
+        for (const task of waiting[category]) {
+            task.id = ensureUuid(task.id);
+            rows.push({
+                id: task.id, user_id: signedInUser.id, title: task.texte,
+                category, quadrant: Number(task.quadrant) || 2, status: "waiting",
+                waiting_for: task.who || "", notes: task.notes || "",
+                estimated_minutes: Number(task.temps) || 0, actual_minutes: null,
+                created_at: task.creeLe || task.miseEnAttenteLe || new Date().toISOString(), completed_at: null
+            });
+        }
+    }
+    const history = readStorage(STORAGE.history, []);
+    for (const task of history) {
+        task.id = ensureUuid(task.id);
+        rows.push({
+            id: task.id, user_id: signedInUser.id, title: task.texte,
+            category: task.categorie === "perso" ? "perso" : "pro", quadrant: Number(task.quadrant) || 2,
+            status: "completed", waiting_for: null, notes: "",
+            estimated_minutes: Number(task.tempsEstime ?? task.temps) || 0,
+            actual_minutes: Number(task.tempsReel) || null,
+            created_at: task.creeLe || task.termineLe || new Date().toISOString(),
+            completed_at: task.termineLe || new Date().toISOString()
+        });
+    }
+    return rows;
+}
+
+function queueCloudSave() {
+    if (!cloudReady || !signedInUser) return;
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(saveEverythingToCloud, 700);
+}
+
+async function saveEverythingToCloud() {
+    if (!cloudReady || !signedInUser) return;
+    const taskRows = collectLocalRows();
+    const bankRows = bank.map(item => ({
+        id: ensureUuid(item.id), user_id: signedInUser.id,
+        keyword: item.name, estimated_minutes: Number(item.time) || 30
+    }));
+    bank.forEach((item, index) => item.id = bankRows[index].id);
+
+    const { error: taskError } = await supabaseClient.from("tasks").upsert(taskRows);
+    if (taskError) {
+        showLoginMessage("Erreur de sauvegarde des tâches : " + taskError.message);
+        return;
+    }
+    const { data: storedTasks, error: readTaskError } = await supabaseClient
+        .from("tasks").select("id").eq("user_id", signedInUser.id);
+    if (readTaskError) {
+        showLoginMessage("Lecture des tâches impossible : " + readTaskError.message);
+        return;
+    }
+    const keepTaskIds = new Set(taskRows.map(row => row.id));
+    const staleTaskIds = (storedTasks || []).map(row => row.id).filter(id => !keepTaskIds.has(id));
+    if (staleTaskIds.length) {
+        const { error } = await supabaseClient.from("tasks").delete().eq("user_id", signedInUser.id).in("id", staleTaskIds);
+        if (error) { showLoginMessage("Nettoyage des anciennes tâches impossible : " + error.message); return; }
+    }
+
+    const { error: bankError } = await supabaseClient.from("task_bank").upsert(bankRows);
+    if (bankError) { showLoginMessage("Erreur de sauvegarde de la banque : " + bankError.message); return; }
+    const { data: storedBank, error: readBankError } = await supabaseClient
+        .from("task_bank").select("id").eq("user_id", signedInUser.id);
+    if (readBankError) { showLoginMessage("Lecture de la banque impossible : " + readBankError.message); return; }
+    const keepBankIds = new Set(bankRows.map(row => row.id));
+    const staleBankIds = (storedBank || []).map(row => row.id).filter(id => !keepBankIds.has(id));
+    if (staleBankIds.length) {
+        const { error } = await supabaseClient.from("task_bank").delete().eq("user_id", signedInUser.id).in("id", staleBankIds);
+        if (error) { showLoginMessage("Nettoyage de la banque impossible : " + error.message); return; }
+    }
+    // Write locally without scheduling another cloud save.
+    localStorage.setItem(STORAGE.pro, JSON.stringify(data.pro));
+    localStorage.setItem(STORAGE.perso, JSON.stringify(data.perso));
+    localStorage.setItem(STORAGE.waiting, JSON.stringify(waiting));
+    localStorage.setItem(STORAGE.bank, JSON.stringify(bank));
+    localStorage.setItem(STORAGE.history, JSON.stringify(readStorage(STORAGE.history, [])));
+    showLoginMessage("Toutes les modifications sont sauvegardées dans ton compte.");
+}
+
+function restoreRows(rows) {
+    data = { pro: [], perso: [] };
+    waiting = { pro: [], perso: [] };
+    const history = [];
+    rows.forEach(row => {
+        const task = {
+            id: row.id, texte: row.title, temps: Number(row.estimated_minutes) || 0,
+            quadrant: Number(row.quadrant) || 2, creeLe: row.created_at
+        };
+        if (row.status === "completed") {
+            history.push({ ...task, tempsEstime: Number(row.estimated_minutes) || 0,
+                tempsReel: Number(row.actual_minutes) || 0, categorie: row.category,
+                categorieMotCle: trouverCategorie(row.title), termineLe: row.completed_at });
+        } else if (row.status === "waiting") {
+            waiting[row.category].push({ ...task, who: row.waiting_for || "", notes: row.notes || "",
+                miseEnAttenteLe: row.created_at });
+        } else {
+            data[row.category].push(task);
+        }
+    });
+    save(STORAGE.pro, data.pro); save(STORAGE.perso, data.perso);
+    save(STORAGE.waiting, waiting); save(STORAGE.history, history);
+}
+
+async function loadUserDashboard(user) {
+    if (cloudReady && signedInUser && signedInUser.id === user.id) return;
+    if (loadingUserId === user.id) return;
+    loadingUserId = user.id;
+    signedInUser = user;
+    showLoginMessage("Chargement de tes tâches...");
+    const [{ data: taskRows, error: taskError }, { data: bankRows, error: bankError }] = await Promise.all([
+        supabaseClient.from("tasks").select("*").eq("user_id", user.id),
+        supabaseClient.from("task_bank").select("*").eq("user_id", user.id)
+    ]);
+    if (taskError || bankError) {
+        loadingUserId = null;
+        signedInUser = null;
+        showLoginMessage("Impossible de lire les données. Vérifie les tables et les règles RLS. Détail : " + (taskError || bankError).message);
+        return;
+    }
+
+    if ((taskRows || []).length) {
+        restoreRows(taskRows);
+    } else {
+        // First login: keep existing browser tasks and copy them to this account.
+        data = { pro: readStorage(STORAGE.pro, []), perso: readStorage(STORAGE.perso, []) };
+        waiting = readStorage(STORAGE.waiting, { pro: [], perso: [] });
+        if (Array.isArray(waiting)) waiting = { pro: waiting, perso: [] };
+        if (!Array.isArray(waiting.pro)) waiting.pro = [];
+        if (!Array.isArray(waiting.perso)) waiting.perso = [];
+    }
+
+    if ((bankRows || []).length) {
+        bank = bankRows.map(row => ({ id: row.id, name: row.keyword, time: Number(row.estimated_minutes) || 30 }));
+    } else if (!bank.length) {
+        bank = [ { id: crypto.randomUUID(), name: "Poste", time: 10 },
+                 { id: crypto.randomUUID(), name: "Entrevue", time: 30 },
+                 { id: crypto.randomUUID(), name: "Rencontre", time: 30 } ];
+    }
+    cloudReady = true;
+    loadingUserId = null;
+    document.getElementById("loginPanel").classList.add("hidden");
+    document.getElementById("appHeader").classList.remove("hidden");
+    document.getElementById("appArea").classList.remove("hidden");
+    document.getElementById("accountBar").classList.remove("hidden");
+    document.getElementById("signedInEmail").textContent = user.email || "Connecté";
+    configurerDragAndDrop();
+    changerVue("pro");
+    // On a first login with an empty cloud table, this imports the browser's existing data.
+    await saveEverythingToCloud();
+}
+
+async function startAuthentication() {
+    if (!supabaseConfigured) {
+        showLoginMessage("Le fichier n’est pas encore configuré. Il faut y coller l’URL du projet Supabase et la clé Publishable.");
+        return;
+    }
+    const button = document.getElementById("loginButton");
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    if (!email || !password) { showLoginMessage("Entre ton adresse courriel et ton mot de passe."); return; }
+    button.disabled = true;
+    button.textContent = "Connexion…";
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    button.disabled = false;
+    button.textContent = "Se connecter";
+    if (error) { showLoginMessage("Connexion impossible : " + error.message); return; }
+    showLoginMessage("Connexion réussie. Chargement du Dashboard...");
+}
+
+document.getElementById("loginButton").addEventListener("click", startAuthentication);
+document.getElementById("loginPassword").addEventListener("keydown", event => { if (event.key === "Enter") startAuthentication(); });
+document.getElementById("logoutButton").addEventListener("click", async () => {
+    cloudReady = false;
+    await supabaseClient.auth.signOut();
+    signedInUser = null;
+    loadingUserId = null;
+    document.getElementById("appHeader").classList.add("hidden");
+    document.getElementById("appArea").classList.add("hidden");
+    document.getElementById("accountBar").classList.add("hidden");
+    document.getElementById("loginPanel").classList.remove("hidden");
+    showLoginMessage("Tu es déconnecté(e).");
+});
+
+// INITIALIZE
 configurerDragAndDrop();
 changerVue("pro");
+if (!supabaseConfigured) {
+    showLoginMessage("Le fichier attend encore l’URL Supabase et la clé Publishable. Elles seront ajoutées à l’étape suivante.");
+} else {
+    supabaseClient.auth.getSession().then(({ data }) => {
+        if (data.session) loadUserDashboard(data.session.user);
+    });
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        if (session && !signedInUser) loadUserDashboard(session.user);
+    });
+}
 
 </script>
 </body>
